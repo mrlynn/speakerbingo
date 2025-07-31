@@ -1,4 +1,5 @@
 import clientPromise from '../../../lib/mongodb'
+import { mockDb } from '../../../lib/mockDb'
 import { nanoid } from 'nanoid'
 
 export default async function handler(req, res) {
@@ -8,8 +9,16 @@ export default async function handler(req, res) {
 
   try {
     const { roomCode, playerName, phrases } = req.body
-    const client = await clientPromise
-    const db = client.db('bingo')
+    
+    // Use mock DB if MongoDB not configured
+    let db
+    if (!process.env.MONGODB_URI || process.env.MONGODB_URI.includes('username:password')) {
+      console.log('Using mock database for development')
+      db = mockDb
+    } else {
+      const client = await clientPromise
+      db = client.db('bingo')
+    }
     
     const game = await db.collection('games').findOne({ 
       roomCode: roomCode.toUpperCase(),
