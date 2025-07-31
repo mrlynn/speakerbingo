@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react'
-import { Box, Typography, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, Paper, useMediaQuery, useTheme } from '@mui/material'
+import React, { useState, useEffect, useCallback } from 'react'
+import { Box, Typography, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, Paper, useMediaQuery, useTheme, Chip, CircularProgress } from '@mui/material'
+import GameLobby from '../components/GameLobby'
 
 const ALL_PHRASES = [
   'Pittsburgh or Tuesday', 'Who knew?', "I'm an alcoholic", 'Shine Bright', 'Anyways', 'Zoomaholic', 'You know',
@@ -18,35 +19,99 @@ function shuffleArray(arr) {
   return arr
 }
 
+function generateGrid() {
+  const chosen = shuffleArray([...ALL_PHRASES]).slice(0, 24)
+  const matrix = []
+  let phraseIndex = 0
+  for (let r = 0; r < 5; r++) {
+    matrix.push([])
+    for (let c = 0; c < 5; c++) {
+      if (r === 2 && c === 2) {
+        matrix[r][c] = 'FREE'
+      } else {
+        matrix[r][c] = chosen[phraseIndex]
+        phraseIndex++
+      }
+    }
+  }
+  return matrix
+}
+
 export default function Home() {
-  const [player, setPlayer] = useState('')
+  // Game state
+  const [mode, setMode] = useState(null) // null, 'create', 'join'
+  const [playerName, setPlayerName] = useState('')
+  const [roomCode, setRoomCode] = useState('')
+  const [playerId, setPlayerId] = useState(null)
+  const [gameState, setGameState] = useState(null)
+  const [isMultiplayer, setIsMultiplayer] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  
+  // Local game state
   const [grid, setGrid] = useState([])
   const [selected, setSelected] = useState([])
   const [bingo, setBingo] = useState(false)
+  
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const isTablet = useMediaQuery(theme.breakpoints.down('md'))
 
+  // Initialize single player game
   useEffect(() => {
-    const chosen = shuffleArray([...ALL_PHRASES]).slice(0, 24) // 24 because center is FREE
-    const matrix = []
-    let phraseIndex = 0
-    for (let r = 0; r < 5; r++) {
-      matrix.push([])
-      for (let c = 0; c < 5; c++) {
-        if (r === 2 && c === 2) {
-          matrix[r][c] = 'FREE'
-        } else {
-          matrix[r][c] = chosen[phraseIndex]
-          phraseIndex++
-        }
-      }
+    if (!isMultiplayer && !gameState) {
+      const newGrid = generateGrid()
+      setGrid(newGrid)
+      const initialSelected = Array(5).fill(0).map(() => Array(5).fill(false))
+      initialSelected[2][2] = true
+      setSelected(initialSelected)
     }
-    setGrid(matrix)
-    const initialSelected = Array(5).fill(0).map(() => Array(5).fill(false))
-    initialSelected[2][2] = true // FREE space is always selected
-    setSelected(initialSelected)
-  }, [])
+  }, [isMultiplayer, gameState])
+
+  // Poll for game updates in multiplayer
+  useEffect(() => {
+    if (!isMultiplayer || !roomCode) return
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/games/${roomCode}/state`)
+        const data = await response.json()
+        
+        if (data.game) {
+          setGameState(data.game)
+          
+          // Check if someone else won
+          if (data.game.winner && data.game.winner !== playerId) {
+            const winner = data.game.players.find(p => p.id === data.game.winner)
+            setBingo(true)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to poll game state:', err)
+      }
+    }, 2000) // Poll every 2 seconds
+
+    return () => clearInterval(pollInterval)
+  }, [isMultiplayer, roomCode, playerId])
+
+  // Update multiplayer game state when local state changes
+  const updateMultiplayerState = useCallback(async (newSelected, hasWon) => {
+    if (!isMultiplayer || !roomCode || !playerId) return
+
+    try {
+      await fetch(`/api/games/${roomCode}/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerId,
+          selected: newSelected,
+          hasWon
+        })
+      })
+    } catch (err) {
+      console.error('Failed to update game state:', err)
+    }
+  }, [isMultiplayer, roomCode, playerId])
 
   function checkBingo(sel) {
     // Check rows
@@ -65,13 +130,91 @@ export default function Home() {
 
   function handleClick(r, c) {
     if (r === 2 && c === 2) return // Can't unselect FREE space
+    if (gameState?.status === 'finished') return // Game is over
+    
     const copy = selected.map(row => [...row])
     copy[r][c] = !copy[r][c]
     setSelected(copy)
-    if (checkBingo(copy)) setBingo(true)
+    
+    const hasWon = checkBingo(copy)
+    if (hasWon) {
+      setBingo(true)
+    }
+    
+    // Update multiplayer state
+    updateMultiplayerState(copy, hasWon)
   }
 
-  // Calculate responsive cell size
+  const handleCreateGame = async () => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const newGrid = generateGrid()
+      const response = await fetch('/api/games/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerName,
+          phrases: newGrid
+        })
+      })
+      
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error)
+      
+      setRoomCode(data.roomCode)
+      setPlayerId(data.playerId)
+      setGameState(data.game)
+      setGrid(newGrid)
+      setSelected(data.game.players[0].selected)
+      setIsMultiplayer(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleJoinGame = async () => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const newGrid = generateGrid()
+      const response = await fetch('/api/games/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomCode,
+          playerName,
+          phrases: newGrid
+        })
+      })
+      
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error)
+      
+      setPlayerId(data.playerId)
+      setGameState(data.game)
+      setGrid(newGrid)
+      const player = data.game.players.find(p => p.id === data.playerId)
+      setSelected(player.selected)
+      setIsMultiplayer(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const startSinglePlayer = () => {
+    setIsMultiplayer(false)
+    setGameState(null)
+    setRoomCode('')
+    setPlayerId(null)
+  }
+
   const getCellSize = () => {
     if (isMobile) return 64
     if (isTablet) return 85
@@ -79,6 +222,49 @@ export default function Home() {
   }
 
   const cellSize = getCellSize()
+
+  // Show lobby if no game started
+  if (!gameState && !grid.length) {
+    return (
+      <Box sx={{ 
+        p: isMobile ? 2 : 4, 
+        minHeight: '100vh',
+        backgroundColor: '#f0f0f0',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <GameLobby
+          mode={mode}
+          setMode={setMode}
+          playerName={playerName}
+          setPlayerName={setPlayerName}
+          roomCode={roomCode}
+          setRoomCode={setRoomCode}
+          onCreateGame={handleCreateGame}
+          onJoinGame={handleJoinGame}
+          isMobile={isMobile}
+        />
+        
+        {error && (
+          <Typography color="error" sx={{ mt: 2 }}>
+            {error}
+          </Typography>
+        )}
+        
+        {loading && <CircularProgress sx={{ mt: 2 }} />}
+        
+        <Button
+          variant="text"
+          onClick={startSinglePlayer}
+          sx={{ mt: 3, color: '#666' }}
+        >
+          Play Single Player
+        </Button>
+      </Box>
+    )
+  }
 
   return (
     <Box sx={{ 
@@ -104,21 +290,35 @@ export default function Home() {
         Sunrise Semester Bingo
       </Typography>
       
-      <Box sx={{ mb: isMobile ? 2 : 3 }}>
-        <TextField
-          label="Your name"
-          value={player}
-          onChange={e => setPlayer(e.target.value)}
-          variant="outlined"
-          size={isMobile ? "small" : "medium"}
-          sx={{ 
-            backgroundColor: 'white',
-            width: isMobile ? '200px' : 'auto'
-          }}
-        />
-      </Box>
+      {/* Multiplayer info */}
+      {isMultiplayer && (
+        <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <Chip 
+            label={`Room: ${roomCode}`} 
+            color="primary" 
+            sx={{ backgroundColor: '#d32f2f' }}
+          />
+          <Chip 
+            label={`Players: ${gameState?.players?.length || 1}`} 
+            variant="outlined" 
+          />
+          {gameState?.status === 'waiting' && (
+            <Chip label="Waiting for players..." color="warning" />
+          )}
+        </Box>
+      )}
       
-      {player && (
+      {/* Player list for multiplayer */}
+      {isMultiplayer && gameState && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Players: {gameState.players.map(p => p.name).join(', ')}
+          </Typography>
+        </Box>
+      )}
+      
+      {/* Current player name */}
+      {(playerName || !isMultiplayer) && (
         <Typography 
           variant={isMobile ? "h6" : "h5"} 
           sx={{ 
@@ -127,11 +327,11 @@ export default function Home() {
             fontSize: isMobile ? '1rem' : isTablet ? '1.25rem' : '1.5rem'
           }}
         >
-          Player: {player}
+          Player: {playerName || 'Guest'}
         </Typography>
       )}
       
-      {/* Bingo Card Container */}
+      {/* Bingo Card */}
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'center',
@@ -195,7 +395,7 @@ export default function Home() {
                     justifyContent: 'center',
                     backgroundColor: 
                       r === 2 && c === 2 ? '#ffd700' : 
-                      selected[r][c] ? '#ff4444' : 'white',
+                      selected[r] && selected[r][c] ? '#ff4444' : 'white',
                     cursor: r === 2 && c === 2 ? 'default' : 'pointer',
                     position: 'relative',
                     overflow: 'hidden',
@@ -208,14 +408,14 @@ export default function Home() {
                       '&:hover': {
                         backgroundColor: 
                           r === 2 && c === 2 ? '#ffd700' : 
-                          selected[r][c] ? '#ff4444' : '#f9f9f9',
+                          selected[r] && selected[r][c] ? '#ff4444' : '#f9f9f9',
                         transform: r === 2 && c === 2 ? 'none' : 'scale(0.98)'
                       }
                     }
                   }}
                 >
-                  {/* Dauber effect for marked cells */}
-                  {selected[r][c] && !(r === 2 && c === 2) && (
+                  {/* Dauber effect */}
+                  {selected[r] && selected[r][c] && !(r === 2 && c === 2) && (
                     <Box sx={{
                       position: 'absolute',
                       width: '85%',
@@ -251,7 +451,7 @@ export default function Home() {
                     textAlign: 'center',
                     color: 
                       r === 2 && c === 2 ? '#d32f2f' : 
-                      selected[r][c] ? 'white' : 'black',
+                      selected[r] && selected[r][c] ? 'white' : 'black',
                     zIndex: 2,
                     position: 'relative',
                     wordBreak: 'break-word',
@@ -266,6 +466,7 @@ export default function Home() {
         </Paper>
       </Box>
       
+      {/* Winner Dialog */}
       <Dialog 
         open={bingo} 
         onClose={() => setBingo(false)}
@@ -286,7 +487,12 @@ export default function Home() {
             fontSize: isMobile ? '1rem' : '1.25rem',
             my: 2
           }}>
-            Congratulations {player || 'Player'}, you've got a Bingo!
+            {gameState?.winner === playerId ? 
+              `Congratulations ${playerName}, you won!` :
+              gameState?.winner ? 
+                `${gameState.players.find(p => p.id === gameState.winner)?.name} won!` :
+                `Congratulations ${playerName || 'Player'}, you've got a Bingo!`
+            }
           </Typography>
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
@@ -304,7 +510,7 @@ export default function Home() {
               }
             }}
           >
-            Play Again
+            New Game
           </Button>
         </DialogActions>
       </Dialog>
