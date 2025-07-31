@@ -1,0 +1,36 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Prevent text selection on bingo cells */
+.bingo-cell {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Improve touch responsiveness */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure the app looks good on all screen sizes */
+@media (max-width: 600px) {
+  html {
+    font-size: 14px;
+  }
+}

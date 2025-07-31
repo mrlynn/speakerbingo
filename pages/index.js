@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { Box, Typography, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, Paper } from '@mui/material'
+import { Box, Typography, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, Paper, useMediaQuery, useTheme } from '@mui/material'
 
 const ALL_PHRASES = [
   'Pittsburgh or Tuesday', 'Who knew?', "I'm an alcoholic", 'Shine Bright', 'Anyways', 'Zoomaholic', 'You know',
   'Purposeful Life', 'Darkness', 'Prostitutes', 'Husband in Prison', "Let's have ourselves a ___day.",
   'I have more time than ____.', 'Bill W. was a philanderer', 'I dunno.', "y'know", 'Pre-teen Diabetic',
-  'Um', 'Like', 'At the end of the day', 'Just saying', 'Right?', "If I'm being honest", 'For what it’s worth',
+  'Um', 'Like', 'At the end of the day', 'Just saying', 'Right?', "If I'm being honest", 'For what it's worth',
   'That being said', 'You get the picture', 'Honestly', 'Kind of', 'Sort of', 'So', 'Basically', 'Moving on', 'Gonna',
-  'I’m not gonna lie', 'To be fair'
+  'I'm not gonna lie', 'To be fair'
 ]
 
 function shuffleArray(arr) {
@@ -23,6 +23,9 @@ export default function Home() {
   const [grid, setGrid] = useState([])
   const [selected, setSelected] = useState([])
   const [bingo, setBingo] = useState(false)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'))
 
   useEffect(() => {
     const chosen = shuffleArray([...ALL_PHRASES]).slice(0, 24) // 24 because center is FREE
@@ -68,60 +71,98 @@ export default function Home() {
     if (checkBingo(copy)) setBingo(true)
   }
 
+  // Calculate responsive cell size
+  const getCellSize = () => {
+    if (isMobile) return 64
+    if (isTablet) return 85
+    return 110
+  }
+
+  const cellSize = getCellSize()
+
   return (
     <Box sx={{ 
-      p: 4, 
+      p: isMobile ? 2 : 4, 
       textAlign: 'center',
       backgroundColor: '#f0f0f0',
-      minHeight: '100vh'
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center'
     }}>
-      <Typography variant="h2" gutterBottom sx={{ 
-        fontWeight: 'bold',
-        color: '#d32f2f',
-        textShadow: '2px 2px 4px rgba(0,0,0,0.2)',
-        mb: 3
-      }}>
+      <Typography 
+        variant={isMobile ? "h4" : "h2"} 
+        gutterBottom 
+        sx={{ 
+          fontWeight: 'bold',
+          color: '#d32f2f',
+          textShadow: '2px 2px 4px rgba(0,0,0,0.2)',
+          mb: isMobile ? 2 : 3,
+          fontSize: isMobile ? '1.75rem' : isTablet ? '2.5rem' : '3.75rem'
+        }}
+      >
         Sunrise Semester Bingo
       </Typography>
-      <Box sx={{ mb: 3 }}>
+      
+      <Box sx={{ mb: isMobile ? 2 : 3 }}>
         <TextField
           label="Your name"
           value={player}
           onChange={e => setPlayer(e.target.value)}
           variant="outlined"
-          sx={{ backgroundColor: 'white' }}
+          size={isMobile ? "small" : "medium"}
+          sx={{ 
+            backgroundColor: 'white',
+            width: isMobile ? '200px' : 'auto'
+          }}
         />
       </Box>
+      
       {player && (
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 'medium' }}>
+        <Typography 
+          variant={isMobile ? "h6" : "h5"} 
+          sx={{ 
+            mb: isMobile ? 2 : 3, 
+            fontWeight: 'medium',
+            fontSize: isMobile ? '1rem' : isTablet ? '1.25rem' : '1.5rem'
+          }}
+        >
           Player: {player}
         </Typography>
       )}
       
       {/* Bingo Card Container */}
-      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center',
+        width: '100%',
+        maxWidth: isMobile ? '100vw' : 'auto',
+        px: isMobile ? 1 : 0,
+        overflowX: 'auto'
+      }}>
         <Paper elevation={10} sx={{ 
           display: 'inline-block',
           backgroundColor: 'white',
-          p: 3,
-          borderRadius: 2
+          p: isMobile ? 1 : isTablet ? 2 : 3,
+          borderRadius: 2,
+          minWidth: 'min-content'
         }}>
           {/* BINGO Header */}
           <Box sx={{ 
             display: 'grid',
-            gridTemplateColumns: 'repeat(5, 110px)',
+            gridTemplateColumns: `repeat(5, ${cellSize}px)`,
             gap: 0,
             mb: 0
           }}>
             {['B','I','N','G','O'].map((letter) => (
               <Box key={letter} sx={{ 
-                height: 70,
+                height: isMobile ? 45 : isTablet ? 55 : 70,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: '#d32f2f',
                 color: 'white',
-                fontSize: '3rem',
+                fontSize: isMobile ? '2rem' : isTablet ? '2.5rem' : '3rem',
                 fontWeight: 'bold',
                 borderRadius: '8px 8px 0 0',
                 border: '2px solid #b71c1c',
@@ -135,7 +176,7 @@ export default function Home() {
           {/* Bingo Grid */}
           <Box sx={{ 
             display: 'grid',
-            gridTemplateColumns: 'repeat(5, 110px)',
+            gridTemplateColumns: `repeat(5, ${cellSize}px)`,
             gap: 0,
             border: '3px solid #b71c1c',
             borderTop: '3px solid #b71c1c',
@@ -148,7 +189,7 @@ export default function Home() {
                   onClick={() => handleClick(r, c)}
                   sx={{
                     border: '1px solid #000',
-                    height: 110,
+                    height: cellSize,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -159,11 +200,17 @@ export default function Home() {
                     position: 'relative',
                     overflow: 'hidden',
                     transition: 'all 0.2s ease',
-                    '&:hover': {
-                      backgroundColor: 
-                        r === 2 && c === 2 ? '#ffd700' : 
-                        selected[r][c] ? '#ff4444' : '#f9f9f9',
-                      transform: r === 2 && c === 2 ? 'none' : 'scale(0.98)'
+                    WebkitTapHighlightColor: 'transparent',
+                    '&:active': {
+                      transform: r === 2 && c === 2 ? 'none' : 'scale(0.95)'
+                    },
+                    '@media (hover: hover)': {
+                      '&:hover': {
+                        backgroundColor: 
+                          r === 2 && c === 2 ? '#ffd700' : 
+                          selected[r][c] ? '#ff4444' : '#f9f9f9',
+                        transform: r === 2 && c === 2 ? 'none' : 'scale(0.98)'
+                      }
                     }
                   }}
                 >
@@ -185,7 +232,7 @@ export default function Home() {
                   {r === 2 && c === 2 && (
                     <Box sx={{
                       position: 'absolute',
-                      fontSize: '4rem',
+                      fontSize: isMobile ? '2.5rem' : isTablet ? '3rem' : '4rem',
                       color: '#d32f2f',
                       opacity: 0.2,
                       transform: 'rotate(15deg)'
@@ -196,15 +243,19 @@ export default function Home() {
                   
                   <Typography sx={{ 
                     fontWeight: r === 2 && c === 2 ? 'bold' : 'medium',
-                    fontSize: r === 2 && c === 2 ? '1.8rem' : '0.8rem',
-                    lineHeight: 1.2,
-                    p: 1,
+                    fontSize: r === 2 && c === 2 ? 
+                      (isMobile ? '1.1rem' : isTablet ? '1.4rem' : '1.8rem') : 
+                      (isMobile ? '0.55rem' : isTablet ? '0.7rem' : '0.8rem'),
+                    lineHeight: 1.1,
+                    p: isMobile ? 0.3 : isTablet ? 0.5 : 1,
                     textAlign: 'center',
                     color: 
                       r === 2 && c === 2 ? '#d32f2f' : 
                       selected[r][c] ? 'white' : 'black',
                     zIndex: 2,
-                    position: 'relative'
+                    position: 'relative',
+                    wordBreak: 'break-word',
+                    hyphens: 'auto'
                   }}>
                     {phrase}
                   </Typography>
@@ -214,15 +265,47 @@ export default function Home() {
           </Box>
         </Paper>
       </Box>
-      <Dialog open={bingo} onClose={() => setBingo(false)}>
-        <DialogTitle>🎉 Bingo! 🎉</DialogTitle>
+      
+      <Dialog 
+        open={bingo} 
+        onClose={() => setBingo(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle sx={{ 
+          textAlign: 'center', 
+          fontSize: isMobile ? '1.5rem' : '2rem',
+          fontWeight: 'bold',
+          color: '#d32f2f'
+        }}>
+          🎉 Bingo! 🎉
+        </DialogTitle>
         <DialogContent>
-          <Typography>
-            Congratulations {player || 'Player'}, you’ve got a Bingo!
+          <Typography sx={{ 
+            textAlign: 'center', 
+            fontSize: isMobile ? '1rem' : '1.25rem',
+            my: 2
+          }}>
+            Congratulations {player || 'Player'}, you've got a Bingo!
           </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setBingo(false)}>Close</Button>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+          <Button 
+            onClick={() => {
+              setBingo(false)
+              window.location.reload()
+            }}
+            variant="contained"
+            size={isMobile ? "medium" : "large"}
+            sx={{ 
+              backgroundColor: '#d32f2f',
+              '&:hover': {
+                backgroundColor: '#b71c1c'
+              }
+            }}
+          >
+            Play Again
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
