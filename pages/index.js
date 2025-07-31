@@ -39,6 +39,7 @@ function generateGrid() {
 
 export default function Home() {
   // Game state
+  const [gameMode, setGameMode] = useState('menu') // 'menu', 'single', 'multiplayer'
   const [mode, setMode] = useState(null) // null, 'create', 'join'
   const [playerName, setPlayerName] = useState('')
   const [roomCode, setRoomCode] = useState('')
@@ -57,16 +58,17 @@ export default function Home() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const isTablet = useMediaQuery(theme.breakpoints.down('md'))
 
-  // Initialize single player game
+  // Initialize single player game when mode changes
   useEffect(() => {
-    if (!isMultiplayer && !gameState) {
+    if (gameMode === 'single') {
       const newGrid = generateGrid()
       setGrid(newGrid)
       const initialSelected = Array(5).fill(0).map(() => Array(5).fill(false))
       initialSelected[2][2] = true
       setSelected(initialSelected)
+      setIsMultiplayer(false)
     }
-  }, [isMultiplayer, gameState])
+  }, [gameMode])
 
   // Poll for game updates in multiplayer
   useEffect(() => {
@@ -169,6 +171,7 @@ export default function Home() {
       setGrid(newGrid)
       setSelected(data.game.players[0].selected)
       setIsMultiplayer(true)
+      setGameMode('multiplayer')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -201,6 +204,7 @@ export default function Home() {
       const player = data.game.players.find(p => p.id === data.playerId)
       setSelected(player.selected)
       setIsMultiplayer(true)
+      setGameMode('multiplayer')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -209,10 +213,12 @@ export default function Home() {
   }
 
   const startSinglePlayer = () => {
+    setGameMode('single')
     setIsMultiplayer(false)
     setGameState(null)
     setRoomCode('')
     setPlayerId(null)
+    setPlayerName('')
   }
 
   const getCellSize = () => {
@@ -223,8 +229,8 @@ export default function Home() {
 
   const cellSize = getCellSize()
 
-  // Show lobby if no game started
-  if (!gameState && !grid.length) {
+  // Show lobby if in menu mode
+  if (gameMode === 'menu') {
     return (
       <Box sx={{ 
         p: isMobile ? 2 : 4, 
@@ -330,6 +336,36 @@ export default function Home() {
           Player: {playerName || 'Guest'}
         </Typography>
       )}
+      
+      {/* Back to menu button */}
+      <Button
+        variant="outlined"
+        size="small"
+        onClick={() => {
+          setGameMode('menu')
+          setGrid([])
+          setSelected([])
+          setBingo(false)
+          setGameState(null)
+          setIsMultiplayer(false)
+          setRoomCode('')
+          setPlayerId(null)
+          setMode(null)
+        }}
+        sx={{ 
+          position: 'absolute',
+          top: isMobile ? 10 : 20,
+          left: isMobile ? 10 : 20,
+          borderColor: '#d32f2f',
+          color: '#d32f2f',
+          '&:hover': {
+            borderColor: '#b71c1c',
+            backgroundColor: 'rgba(211, 47, 47, 0.04)'
+          }
+        }}
+      >
+        ← Back to Menu
+      </Button>
       
       {/* Bingo Card */}
       <Box sx={{ 
