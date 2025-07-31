@@ -5,9 +5,9 @@ const ALL_PHRASES = [
   'Pittsburgh or Tuesday', 'Who knew?', "I'm an alcoholic", 'Shine Bright', 'Anyways', 'Zoomaholic', 'You know',
   'Purposeful Life', 'Darkness', 'Prostitutes', 'Husband in Prison', "Let's have ourselves a ___day.",
   'I have more time than ____.', 'Bill W. was a philanderer', 'I dunno.', "y'know", 'Pre-teen Diabetic',
-  'Um', 'Like', 'At the end of the day', 'Just saying', 'Right?', "If I'm being honest", 'For what it's worth',
+  'Um', 'Like', 'At the end of the day', 'Just saying', 'Right?', "If I'm being honest", "For what it's worth",
   'That being said', 'You get the picture', 'Honestly', 'Kind of', 'Sort of', 'So', 'Basically', 'Moving on', 'Gonna',
-  'I'm not gonna lie', 'To be fair'
+  "I'm not gonna lie", 'To be fair'
 ]
 
 function shuffleArray(arr) {
