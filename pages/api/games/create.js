@@ -1,5 +1,4 @@
 import clientPromise from '../../../lib/mongodb'
-import { mockDb } from '../../../lib/mockDb'
 import { nanoid } from 'nanoid'
 
 export default async function handler(req, res) {
@@ -10,15 +9,12 @@ export default async function handler(req, res) {
   try {
     const { playerName, phrases } = req.body
     
-    // Use mock DB if MongoDB not configured
-    let db
-    if (!process.env.MONGODB_URI || process.env.MONGODB_URI.includes('username:password')) {
-      console.log('Using mock database for development')
-      db = mockDb
-    } else {
-      const client = await clientPromise
-      db = client.db('bingo')
+    if (!process.env.MONGODB_URI) {
+      return res.status(500).json({ error: 'MongoDB connection not configured. Please set MONGODB_URI environment variable.' })
     }
+    
+    const client = await clientPromise
+    const db = client.db('bingo')
     
     const roomCode = nanoid(6).toUpperCase()
     
