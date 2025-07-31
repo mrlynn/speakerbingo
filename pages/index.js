@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Box, Typography, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, Paper, useMediaQuery, useTheme, Chip, CircularProgress } from '@mui/material'
+import { Box, Typography, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, Paper, useMediaQuery, useTheme, Chip, CircularProgress, IconButton, Snackbar, Alert, Tooltip } from '@mui/material'
 import GameLobby from '../components/GameLobby'
 import { sunriseTheme } from '../lib/theme'
 
@@ -55,9 +55,23 @@ export default function Home() {
   const [selected, setSelected] = useState([])
   const [bingo, setBingo] = useState(false)
   
+  // Share functionality state
+  const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [shareSuccess, setShareSuccess] = useState(false)
+  
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const isTablet = useMediaQuery(theme.breakpoints.down('md'))
+
+  // Check for room code in URL on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const roomParam = urlParams.get('room')
+    if (roomParam && roomParam.length === 6) {
+      setRoomCode(roomParam.toUpperCase())
+      setMode('join')
+    }
+  }, [])
 
   // Initialize single player game when mode changes
   useEffect(() => {
@@ -230,6 +244,59 @@ export default function Home() {
 
   const cellSize = getCellSize()
 
+  // Share functionality
+  const handleCopyRoomCode = async () => {
+    try {
+      await navigator.clipboard.writeText(roomCode)
+      setShareSuccess(true)
+      setShareDialogOpen(false)
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = roomCode
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setShareSuccess(true)
+      setShareDialogOpen(false)
+    }
+  }
+
+  const handleShareUrl = async () => {
+    const gameUrl = `${window.location.origin}${window.location.pathname}?room=${roomCode}`
+    try {
+      await navigator.clipboard.writeText(gameUrl)
+      setShareSuccess(true)
+      setShareDialogOpen(false)
+    } catch (err) {
+      // Fallback
+      const textArea = document.createElement('textarea')
+      textArea.value = gameUrl
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setShareSuccess(true)
+      setShareDialogOpen(false)
+    }
+  }
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join my Sunrise Semester Bingo Game!',
+          text: `Come play Sunrise Semester Bingo with me! Room code: ${roomCode}`,
+          url: `${window.location.origin}${window.location.pathname}?room=${roomCode}`
+        })
+        setShareDialogOpen(false)
+      } catch (err) {
+        console.log('Share cancelled or failed')
+      }
+    }
+  }
+
   // Show lobby if in menu mode
   if (gameMode === 'menu') {
     return (
@@ -338,18 +405,39 @@ export default function Home() {
           position: 'relative',
           zIndex: 1
         }}>
-          <Chip 
-            label={`🏠 Room: ${roomCode}`} 
-            sx={{ 
-              background: sunriseTheme.gradients.button,
-              color: 'white',
-              fontWeight: 600,
-              boxShadow: sunriseTheme.shadows.soft,
-              '& .MuiChip-label': {
-                px: 2
-              }
-            }}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Chip 
+              label={`🏠 Room: ${roomCode}`} 
+              sx={{ 
+                background: sunriseTheme.gradients.button,
+                color: 'white',
+                fontWeight: 600,
+                boxShadow: sunriseTheme.shadows.soft,
+                '& .MuiChip-label': {
+                  px: 2
+                }
+              }}
+            />
+            <Tooltip title="Share game with friends">
+              <IconButton
+                onClick={() => setShareDialogOpen(true)}
+                size="small"
+                sx={{
+                  background: sunriseTheme.gradients.card,
+                  border: `2px solid ${sunriseTheme.colors.sunrise.golden}60`,
+                  color: sunriseTheme.colors.sunrise.dawn,
+                  boxShadow: sunriseTheme.shadows.soft,
+                  '&:hover': {
+                    background: `${sunriseTheme.colors.sunrise.dawn}10`,
+                    transform: 'scale(1.1)',
+                    boxShadow: sunriseTheme.shadows.medium
+                  }
+                }}
+              >
+                📤
+              </IconButton>
+            </Tooltip>
+          </Box>
           <Chip 
             label={`👥 Players: ${gameState?.players?.length || 1}`} 
             variant="outlined"
@@ -781,6 +869,192 @@ export default function Home() {
           50% { opacity: 1; }
         }
       `}</style>
+
+      {/* Share Dialog */}
+      <Dialog
+        open={shareDialogOpen}
+        onClose={() => setShareDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            background: sunriseTheme.gradients.card,
+            borderRadius: 3,
+            border: `3px solid ${sunriseTheme.colors.sunrise.golden}60`,
+            boxShadow: sunriseTheme.shadows.strong
+          }
+        }}
+      >
+        <DialogTitle sx={{
+          textAlign: 'center',
+          fontFamily: '"Playfair Display", serif',
+          fontWeight: 700,
+          fontSize: '1.8rem',
+          color: sunriseTheme.colors.sunrise.dawn,
+          pb: 1
+        }}>
+          🌅 Share Your Sunrise Game
+        </DialogTitle>
+        
+        <DialogContent sx={{ px: 3, py: 2 }}>
+          <Box sx={{ 
+            textAlign: 'center',
+            mb: 3,
+            p: 2,
+            borderRadius: 2,
+            background: `${sunriseTheme.colors.sunrise.golden}15`,
+            border: `1px solid ${sunriseTheme.colors.sunrise.golden}40`
+          }}>
+            <Typography variant="h4" sx={{ 
+              fontFamily: '"Playfair Display", serif',
+              fontWeight: 800,
+              color: sunriseTheme.colors.sunrise.dawn,
+              mb: 1,
+              letterSpacing: '0.2em'
+            }}>
+              {roomCode}
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              color: sunriseTheme.colors.text.secondary,
+              fontStyle: 'italic'
+            }}>
+              Room Code
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Native Share (Mobile) */}
+            {navigator.share && (
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                onClick={handleNativeShare}
+                sx={{
+                  background: sunriseTheme.gradients.button,
+                  color: 'white',
+                  fontWeight: 600,
+                  py: 1.5,
+                  borderRadius: 2,
+                  boxShadow: sunriseTheme.shadows.soft,
+                  '&:hover': {
+                    background: `linear-gradient(135deg, ${sunriseTheme.colors.sunrise.dawn} 0%, ${sunriseTheme.colors.sunrise.horizon} 100%)`,
+                    boxShadow: sunriseTheme.shadows.medium,
+                    transform: 'translateY(-1px)'
+                  }
+                }}
+              >
+                📱 Share with Friends
+              </Button>
+            )}
+
+            {/* Copy Room Code */}
+            <Button
+              fullWidth
+              variant="outlined"
+              size="large"
+              onClick={handleCopyRoomCode}
+              sx={{
+                borderColor: sunriseTheme.colors.sunrise.morning,
+                color: sunriseTheme.colors.sunrise.dawn,
+                fontWeight: 600,
+                py: 1.5,
+                borderRadius: 2,
+                borderWidth: '2px',
+                '&:hover': {
+                  borderColor: sunriseTheme.colors.sunrise.dawn,
+                  backgroundColor: `${sunriseTheme.colors.sunrise.dawn}10`,
+                  borderWidth: '2px',
+                  transform: 'translateY(-1px)'
+                }
+              }}
+            >
+              📋 Copy Room Code
+            </Button>
+
+            {/* Copy Game Link */}
+            <Button
+              fullWidth
+              variant="outlined"
+              size="large"
+              onClick={handleShareUrl}
+              sx={{
+                borderColor: sunriseTheme.colors.sunrise.golden,
+                color: sunriseTheme.colors.sunrise.horizon,
+                fontWeight: 600,
+                py: 1.5,
+                borderRadius: 2,
+                borderWidth: '2px',
+                '&:hover': {
+                  borderColor: sunriseTheme.colors.sunrise.horizon,
+                  backgroundColor: `${sunriseTheme.colors.sunrise.horizon}10`,
+                  borderWidth: '2px',
+                  transform: 'translateY(-1px)'
+                }
+              }}
+            >
+              🔗 Copy Game Link
+            </Button>
+          </Box>
+
+          <Box sx={{ 
+            mt: 3, 
+            p: 2, 
+            borderRadius: 2, 
+            background: `${sunriseTheme.colors.warm.peach}20`,
+            textAlign: 'center'
+          }}>
+            <Typography variant="body2" sx={{ 
+              color: sunriseTheme.colors.text.secondary,
+              fontStyle: 'italic'
+            }}>
+              💡 Friends can join by entering the room code or clicking your shared link!
+            </Typography>
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+          <Button
+            onClick={() => setShareDialogOpen(false)}
+            variant="text"
+            sx={{
+              color: sunriseTheme.colors.text.secondary,
+              fontWeight: 500,
+              '&:hover': {
+                backgroundColor: `${sunriseTheme.colors.sunrise.golden}20`
+              }
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Success Notification */}
+      <Snackbar
+        open={shareSuccess}
+        autoHideDuration={3000}
+        onClose={() => setShareSuccess(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setShareSuccess(false)}
+          severity="success"
+          sx={{
+            background: sunriseTheme.gradients.card,
+            border: `2px solid ${sunriseTheme.colors.sunrise.golden}`,
+            borderRadius: 2,
+            color: sunriseTheme.colors.text.primary,
+            fontWeight: 600,
+            '& .MuiAlert-icon': {
+              color: sunriseTheme.colors.sunrise.dawn
+            },
+            boxShadow: sunriseTheme.shadows.medium
+          }}
+        >
+          ✨ Copied to clipboard! Ready to share your sunrise adventure!
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }
