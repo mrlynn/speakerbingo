@@ -1,4 +1,5 @@
 import React from 'react'
+import { PHRASE_CATEGORIES } from '../lib/phrases'
 
 export default function GameLobby({ 
   mode, 
@@ -7,6 +8,8 @@ export default function GameLobby({
   setPlayerName, 
   roomCode, 
   setRoomCode,
+  selectedCategory,
+  setSelectedCategory,
   onCreateGame,
   onJoinGame,
   isMobile,
@@ -35,6 +38,25 @@ export default function GameLobby({
           onChange={e => setPlayerName(e.target.value)}
           className="name-input"
         />
+
+        {/* Category Selector */}
+        <div className="category-selector">
+          <label className="category-label">Choose your phrases:</label>
+          <select
+            value={selectedCategory}
+            onChange={e => setSelectedCategory(e.target.value)}
+            className="category-select"
+          >
+            {Object.entries(PHRASE_CATEGORIES).map(([key, category]) => (
+              <option key={key} value={key}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+          <div className="category-description">
+            {PHRASE_CATEGORIES[selectedCategory]?.description}
+          </div>
+        </div>
 
         {!mode && (
           <div className="button-group">
@@ -207,6 +229,49 @@ export default function GameLobby({
           outline: none;
           border-color: #FF6B35;
           border-width: 2px;
+        }
+        
+        .category-selector {
+          margin-bottom: 24px;
+        }
+        
+        .category-label {
+          display: block;
+          color: #FF6B35;
+          font-weight: 600;
+          margin-bottom: 8px;
+          font-size: 14px;
+        }
+        
+        .category-select {
+          width: 100%;
+          padding: 12px 16px;
+          border: 2px solid #ddd;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.95);
+          font-size: 16px;
+          font-weight: 600;
+          color: #FF6B35;
+          transition: all 0.3s ease;
+          cursor: pointer;
+        }
+        
+        .category-select:hover {
+          border-color: #F7931E;
+        }
+        
+        .category-select:focus {
+          outline: none;
+          border-color: #FF6B35;
+          border-width: 2px;
+        }
+        
+        .category-description {
+          font-size: 12px;
+          color: #666;
+          font-style: italic;
+          margin-top: 6px;
+          text-align: center;
         }
         
         .button-group {

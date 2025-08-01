@@ -1,25 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import GameLobby from '../components/GameLobby'
+import { PHRASE_CATEGORIES, getRandomPhrasesFromCategory } from '../lib/phrases'
 
-const ALL_PHRASES = [
-  'Pittsburgh or Tuesday', 'Who knew?', "I'm an alcoholic", 'Shine Bright', 'Anyways', 'Zoomaholic', 'You know',
-  'Purposeful Life', 'Darkness', 'Prostitutes', 'Husband in Prison', "Let's have ourselves a ___day.",
-  'I have more time than ____.', 'Bill W. was a philanderer', 'I dunno.', "y'know", 'Pre-teen Diabetic',
-  'Um', 'Like', 'At the end of the day', 'Just saying', 'Right?', "If I'm being honest", "For what it's worth",
-  'That being said', 'You get the picture', 'Honestly', 'Kind of', 'Sort of', 'So', 'Basically', 'Moving on', 'Gonna',
-  "I'm not gonna lie", 'To be fair'
-]
-
-function shuffleArray(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
-  }
-  return arr
-}
-
-function generateGrid() {
-  const chosen = shuffleArray([...ALL_PHRASES]).slice(0, 24)
+function generateGrid(categoryKey = 'sunrise-regulars') {
+  const chosen = getRandomPhrasesFromCategory(categoryKey, 24)
   const matrix = []
   let phraseIndex = 0
   for (let r = 0; r < 5; r++) {
@@ -47,6 +31,9 @@ export default function Home() {
   const [isMultiplayer, setIsMultiplayer] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  
+  // Phrase category selection
+  const [selectedCategory, setSelectedCategory] = useState('sunrise-regulars')
   
   // Local game state
   const [grid, setGrid] = useState([])
@@ -88,11 +75,11 @@ export default function Home() {
   // Initialize grid for single player
   useEffect(() => {
     if (gameMode === 'single' && grid.length === 0) {
-      const newGrid = generateGrid()
+      const newGrid = generateGrid(selectedCategory)
       setGrid(newGrid)
       setSelected(Array(5).fill().map(() => Array(5).fill(false)))
     }
-  }, [gameMode, grid])
+  }, [gameMode, grid, selectedCategory])
 
   // Multiplayer polling for game updates
   useEffect(() => {
@@ -180,13 +167,14 @@ export default function Home() {
     setError(null)
     
     try {
-      const newGrid = generateGrid()
+      const newGrid = generateGrid(selectedCategory)
       const response = await fetch('/api/games/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           playerName,
-          phrases: newGrid
+          phrases: newGrid,
+          category: selectedCategory
         })
       })
       
@@ -217,7 +205,8 @@ export default function Home() {
     setError(null)
     
     try {
-      const newGrid = generateGrid()
+      // For joining games, we'll get the category from the existing game
+      const newGrid = generateGrid(selectedCategory)
       const response = await fetch('/api/games/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -233,7 +222,16 @@ export default function Home() {
       
       setPlayerId(data.playerId)
       setGameState(data.game)
-      setGrid(newGrid)
+      
+      // If the game has a different category, regenerate the grid
+      if (data.game.category && data.game.category !== selectedCategory) {
+        const categoryGrid = generateGrid(data.game.category)
+        setGrid(categoryGrid)
+        setSelectedCategory(data.game.category)
+      } else {
+        setGrid(newGrid)
+      }
+      
       const player = data.game.players.find(p => p.id === data.playerId)
       setSelected(player.selected)
       setIsMultiplayer(true)
@@ -326,6 +324,8 @@ export default function Home() {
           setPlayerName={setPlayerName}
           roomCode={roomCode}
           setRoomCode={setRoomCode}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
           onCreateGame={handleCreateGame}
           onJoinGame={handleJoinGame}
           isMobile={isMobile}

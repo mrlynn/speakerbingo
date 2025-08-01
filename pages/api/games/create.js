@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { playerName, phrases } = req.body
+    const { playerName, phrases, category = 'sunrise-regulars' } = req.body
     
     if (!process.env.MONGODB_URI) {
       return res.status(500).json({ error: 'MongoDB connection not configured. Please set MONGODB_URI environment variable.' })
@@ -20,6 +20,7 @@ export default async function handler(req, res) {
     
     const game = {
       roomCode,
+      category,
       createdAt: new Date(),
       players: [{
         id: nanoid(),
