@@ -9,7 +9,8 @@ export default function GameLobby({
   setRoomCode,
   onCreateGame,
   onJoinGame,
-  isMobile 
+  isMobile,
+  onAbout
 }) {
   return (
     <div className="lobby-container">
@@ -112,6 +113,15 @@ export default function GameLobby({
           </div>
         )}
       </div>
+      
+      {/* About button */}
+      <button
+        className="about-btn-lobby"
+        onClick={onAbout}
+        title="Learn about the game's origin"
+      >
+        ℹ️ About this game
+      </button>
       
       <style jsx>{`
         .lobby-container {
@@ -336,6 +346,27 @@ export default function GameLobby({
         
         .back-btn:hover {
           background: rgba(255, 211, 63, 0.2);
+        }
+        
+        .about-btn-lobby {
+          margin-top: 24px;
+          background: rgba(255, 255, 255, 0.2);
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 25px;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 14px;
+          transition: all 0.3s ease;
+          backdrop-filter: blur(10px);
+        }
+        
+        .about-btn-lobby:hover {
+          background: rgba(255, 255, 255, 0.3);
+          border-color: rgba(255, 255, 255, 0.5);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         
         @keyframes pulse {

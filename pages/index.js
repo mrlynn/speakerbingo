@@ -329,6 +329,7 @@ export default function Home() {
           onCreateGame={handleCreateGame}
           onJoinGame={handleJoinGame}
           isMobile={isMobile}
+          onAbout={() => setAboutDialogOpen(true)}
         />
         
         {error && (
@@ -345,6 +346,39 @@ export default function Home() {
         >
           Play Single Player
         </button>
+
+        {/* About Dialog for Menu */}
+        {aboutDialogOpen && (
+          <div className="dialog-overlay" onClick={() => setAboutDialogOpen(false)}>
+            <div className="dialog about-dialog" onClick={(e) => e.stopPropagation()}>
+              <h2 className="dialog-title">About Sunrise Semester Bingo</h2>
+              
+              <div className="dialog-content">
+                <div className="about-content">
+                  <p className="about-subtitle">A game that reminds us all of Rule 62: never take yourself too seriously.</p>
+                  
+                  <p>Sunrise Semester Bingo is a lighthearted social game created to bring a little extra fun to everyday conversations, meetings, and presentations. Whether you're in a 9 AM check-in, a recovery circle, or just chatting with friends, this game turns common phrases into opportunities for laughter and connection.</p>
+                  
+                  <h3>Here's how it works:</h3>
+                  <p>Everyone gets a bingo card filled with words and sayings that tend to pop up in conversation—things like "let's circle back," "just for today," or "I feel seen." As you listen, you mark off each one you hear. Get five in a row? Bingo! No prizes here—just the joy of noticing and sharing a good laugh with the people around you.</p>
+                  
+                  <h3>Why we made this game</h3>
+                  <p>Sunrise Semester Bingo was born out of the simple desire to keep things fun. In a world where we can all get a little too serious (especially during long meetings or heartfelt shares), we wanted a playful way to stay engaged without losing the spirit of connection. Inspired by Rule 62—never take yourself too seriously—this game is our reminder to lighten up, listen well, and enjoy the moment.</p>
+                  
+                  <p>So grab a card, tune in, and get ready to shout "Bingo!" when you least expect it. You'll be surprised how much joy you can find in the words we say every day.</p>
+                  
+                  <p className="about-author">Written and designed by Michael Lynn</p>
+                </div>
+              </div>
+
+              <div className="dialog-actions">
+                <button className="close-btn" onClick={() => setAboutDialogOpen(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <style jsx>{`
           .container {
@@ -376,6 +410,111 @@ export default function Home() {
           }
           .single-player-btn:hover {
             color: #333;
+          }
+          
+          .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+          }
+          
+          .dialog {
+            background: white;
+            border-radius: 12px;
+            border: 3px solid #FFD23F;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+          }
+          
+          .dialog-title {
+            text-align: center;
+            font-size: ${isMobile ? '2rem' : '2.5rem'};
+            font-family: "Inter", sans-serif;
+            font-weight: 900;
+            color: #FF6B35;
+            padding: 24px 24px 8px;
+            animation: bounce 1s ease-in-out infinite;
+            letter-spacing: -0.01em;
+          }
+          
+          .dialog-content {
+            padding: 0 24px 16px;
+          }
+          
+          .about-dialog {
+            max-width: 600px;
+            max-height: 80vh;
+          }
+          
+          .about-content {
+            line-height: 1.6;
+            color: #333;
+          }
+          
+          .about-content p {
+            margin-bottom: 16px;
+          }
+          
+          .about-subtitle {
+            font-style: italic;
+            font-weight: 600;
+            color: #FF6B35;
+            font-size: 1.1rem;
+            margin-bottom: 20px !important;
+          }
+          
+          .about-content h3 {
+            color: #FF6B35;
+            font-family: "Inter", sans-serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-top: 24px;
+            margin-bottom: 12px;
+          }
+          
+          .about-author {
+            font-style: italic;
+            color: #666;
+            text-align: right;
+            margin-top: 24px !important;
+            border-top: 1px solid #eee;
+            padding-top: 16px;
+          }
+          
+          .dialog-actions {
+            display: flex;
+            justify-content: center;
+            padding: 0 24px 24px;
+          }
+          
+          .close-btn {
+            background: none;
+            border: none;
+            color: #666;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+          }
+          
+          .close-btn:hover {
+            background: rgba(255, 211, 63, 0.2);
+          }
+          
+          @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
           }
         `}</style>
       </div>
