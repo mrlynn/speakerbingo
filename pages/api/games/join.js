@@ -37,7 +37,9 @@ export default async function handler(req, res) {
       isHost: false,
       grid: phrases,
       selected: Array(5).fill(0).map(() => Array(5).fill(false)),
-      hasWon: false
+      hasWon: false,
+      points: 0,
+      clickCounts: {}
     }
     
     // Set FREE space

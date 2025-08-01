@@ -28,7 +28,9 @@ export default async function handler(req, res) {
         isHost: true,
         grid: phrases,
         selected: Array(5).fill(0).map(() => Array(5).fill(false)),
-        hasWon: false
+        hasWon: false,
+        points: 0,
+        clickCounts: {}
       }],
       status: 'waiting', // waiting, playing, finished
       winner: null

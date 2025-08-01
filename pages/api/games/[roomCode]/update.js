@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { playerId, selected, hasWon } = req.body
+    const { playerId, selected, hasWon, points, clickCounts } = req.body
     
     if (!process.env.MONGODB_URI) {
       return res.status(500).json({ error: 'MongoDB connection not configured. Please set MONGODB_URI environment variable.' })
@@ -33,6 +33,16 @@ export default async function handler(req, res) {
     // Update player's selection state
     const updateData = {
       [`players.${playerIndex}.selected`]: selected
+    }
+    
+    // Update points if provided
+    if (points !== undefined) {
+      updateData[`players.${playerIndex}.points`] = points
+    }
+    
+    // Update click counts if provided
+    if (clickCounts !== undefined) {
+      updateData[`players.${playerIndex}.clickCounts`] = clickCounts
     }
     
     // If player won, update game status

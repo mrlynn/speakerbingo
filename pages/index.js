@@ -40,6 +40,10 @@ export default function Home() {
   const [selected, setSelected] = useState([])
   const [bingo, setBingo] = useState(false)
   
+  // Points system state
+  const [points, setPoints] = useState(0)
+  const [clickCounts, setClickCounts] = useState({})
+  
   // Share functionality state
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
   const [shareSuccess, setShareSuccess] = useState(false)
@@ -84,6 +88,8 @@ export default function Home() {
       const newGrid = generateGrid(selectedCategory)
       setGrid(newGrid)
       setSelected(Array(5).fill().map(() => Array(5).fill(false)))
+      setPoints(0)
+      setClickCounts({})
     }
   }, [gameMode, grid, selectedCategory])
 
@@ -97,6 +103,17 @@ export default function Home() {
         if (response.ok) {
           const data = await response.json()
           setGameState(data.game)
+          
+          // Update current player's points and click counts from server
+          const currentPlayer = data.game.players.find(p => p.id === playerId)
+          if (currentPlayer) {
+            if (currentPlayer.points !== undefined) {
+              setPoints(currentPlayer.points)
+            }
+            if (currentPlayer.clickCounts !== undefined) {
+              setClickCounts(currentPlayer.clickCounts)
+            }
+          }
           
           // Update bingo state if someone won
           if (data.game.winner && !bingo) {
@@ -143,11 +160,23 @@ export default function Home() {
     // Mark center as always selected
     newSelected[2][2] = true
     
+    // Update click count and calculate points
+    const cellKey = `${r}-${c}`
+    const currentClicks = (clickCounts[cellKey] || 0) + 1
+    const newClickCounts = { ...clickCounts, [cellKey]: currentClicks }
+    
+    const pointsEarned = calculatePoints(r, c, currentClicks)
+    const newPoints = points + pointsEarned
+    
     setSelected(newSelected)
+    setClickCounts(newClickCounts)
+    setPoints(newPoints)
     
     const hasWon = checkBingo(newSelected)
     if (hasWon) {
       setBingo(true)
+      // Add BINGO bonus points
+      setPoints(newPoints + 1000)
     }
     
     // Update multiplayer game
@@ -159,7 +188,9 @@ export default function Home() {
           body: JSON.stringify({
             playerId,
             selected: newSelected,
-            hasWon
+            hasWon,
+            points: hasWon ? newPoints + 1000 : newPoints,
+            clickCounts: newClickCounts
           })
         })
       } catch (error) {
@@ -197,6 +228,8 @@ export default function Home() {
         newSelected[2][2] = true // Mark FREE space
         return newSelected
       })
+      setPoints(0)
+      setClickCounts({})
       setIsMultiplayer(true)
       setGameMode('multiplayer')
     } catch (err) {
@@ -240,6 +273,8 @@ export default function Home() {
       
       const player = data.game.players.find(p => p.id === data.playerId)
       setSelected(player.selected)
+      setPoints(player.points || 0)
+      setClickCounts(player.clickCounts || {})
       setIsMultiplayer(true)
       setGameMode('multiplayer')
     } catch (err) {
@@ -265,6 +300,30 @@ export default function Home() {
   }
 
   const cellSize = getCellSize()
+
+  // Points calculation function
+  const calculatePoints = (row, col, clickCount) => {
+    if (row === 2 && col === 2) return 0 // FREE space gives no points
+    
+    // Position-based base points
+    let basePoints
+    const isCorner = (row === 0 || row === 4) && (col === 0 || col === 4)
+    const isEdge = row === 0 || row === 4 || col === 0 || col === 4
+    
+    if (isCorner) {
+      basePoints = 150
+    } else if (isEdge) {
+      basePoints = 100
+    } else {
+      basePoints = 75
+    }
+    
+    // Diminishing returns based on click count
+    const multipliers = [1.0, 0.6, 0.35, 0.2, 0.1]
+    const multiplier = multipliers[Math.min(clickCount - 1, multipliers.length - 1)]
+    
+    return Math.floor(basePoints * multiplier)
+  }
 
   // Share functionality
   const handleCopyRoomCode = async () => {
@@ -367,32 +426,38 @@ export default function Home() {
                   </div>
 
                   <h3>🎯 The Goal</h3>
-                  <p>Listen carefully to speakers during your meeting and mark off phrases as you hear them. Get five in a row (horizontal, vertical, or diagonal) and you've got BINGO! It's that simple... and that fun!</p>
+                  <p>Listen carefully to speakers during your meeting and mark off phrases as you hear them. Get five in a row (horizontal, vertical, or diagonal) and you've got BINGO! Plus, earn points along the way to add some friendly competition!</p>
 
                   <h3>🎮 How to Play</h3>
                   <ol className="instructions-list">
                     <li><strong>Choose Your Phrases:</strong> Pick a category that matches your meeting type. "Sunrise Regulars" for general meetings, "Steps & Traditions" for step meetings, or go wild with "Clutter Words" if you want a real challenge!</li>
                     
-                    <li><strong>Start Listening:</strong> As speakers share, keep your ears open for the phrases on your card. When you hear one, click it! The square will light up with a satisfying orange glow.</li>
+                    <li><strong>Start Listening:</strong> As speakers share, keep your ears open for the phrases on your card. When you hear one, click it! The square will light up with a satisfying orange glow and you'll earn points.</li>
                     
                     <li><strong>Watch Your Progress:</strong> The FREE space in the center is your gift - it's always marked. Use it wisely as part of your winning strategy!</li>
                     
-                    <li><strong>Get Five in a Row:</strong> Line them up horizontally, vertically, or diagonally. When you hit that magical fifth square... 🎊 BINGO! 🎊</li>
+                    <li><strong>Earn Points:</strong> Each square shows its point value. Corner squares are worth 150 points, edge squares 100 points, and inner squares 75 points. Click the same square multiple times for diminishing bonus points!</li>
+                    
+                    <li><strong>Get Five in a Row:</strong> Line them up horizontally, vertically, or diagonally. When you hit that magical fifth square... 🎊 BINGO! 🎊 Plus you'll get a 1000 point bonus!</li>
                   </ol>
 
                   <h3>🌟 Pro Tips</h3>
                   <ul className="pro-tips">
                     <li>🎧 <strong>Stay Present:</strong> The beauty of this game is it actually helps you listen better. You might be surprised what wisdom you catch while hunting for phrases!</li>
                     
-                    <li>👥 <strong>Multiplayer Magic:</strong> Create a room and share the code with friends. You can peek at their boards with the players button - friendly competition makes everything better!</li>
+                    <li>👥 <strong>Multiplayer Magic:</strong> Create a room and share the code with friends. You can peek at their boards and compare points with the players button - friendly competition makes everything better!</li>
+                    
+                    <li>🎯 <strong>Strategic Clicking:</strong> Corner squares give the highest points! But don't ignore those edge and inner squares - they add up quickly.</li>
                     
                     <li>🎲 <strong>Mix It Up:</strong> Each game generates a random selection from your chosen category, so no two games are the same!</li>
+                    
+                    <li>🔢 <strong>Points Strategy:</strong> You can click the same square multiple times for bonus points, but with diminishing returns. Sometimes it's better to find new phrases!</li>
                     
                     <li>😄 <strong>Keep It Light:</strong> Remember Rule 62 - don't take yourself too seriously! This is about fun and connection, not perfection.</li>
                   </ul>
 
                   <h3>🏆 Winning & Beyond</h3>
-                  <p>When you get BINGO, celebrate! But don't stop there - you can keep playing to see how many squares you can fill. In multiplayer games, see who can get the most squares marked by the end of the meeting!</p>
+                  <p>When you get BINGO, celebrate your 1000 bonus points! But don't stop there - you can keep playing to rack up points and see how many squares you can fill. In multiplayer games, compete for the highest score by the end of the meeting!</p>
 
                   <div className="instructions-footer">
                     <p><em>Remember: The real win is staying engaged, having fun, and maybe learning something new along the way. Happy listening! 🌅</em></p>
@@ -623,11 +688,16 @@ export default function Home() {
         </div>
       )}
       
-      {/* Current player name */}
+      {/* Current player name and points */}
       {(playerName || !isMultiplayer) && (
-        <h2 className="player-name">
-          Player: {playerName || 'Guest'}
-        </h2>
+        <div className="player-info">
+          <h2 className="player-name">
+            Player: {playerName || 'Guest'}
+          </h2>
+          <div className="points-display">
+            🏆 {points.toLocaleString()} points
+          </div>
+        </div>
       )}
       
       {/* Back to menu button */}
@@ -689,7 +759,21 @@ export default function Home() {
                 >
                   {r === 2 && c === 2 && <div className="free-icon">☀️</div>}
                   {selected[r] && selected[r][c] && !(r === 2 && c === 2) && <div className="selected-icon">✨</div>}
-                  <span className="cell-text">{phrase}</span>
+                  <div className="cell-content">
+                    <span className="cell-text">{phrase}</span>
+                    {!(r === 2 && c === 2) && (
+                      <div className="cell-info">
+                        <div className="point-value">
+                          {calculatePoints(r, c, (clickCounts[`${r}-${c}`] || 0) + 1)}
+                        </div>
+                        {clickCounts[`${r}-${c}`] && (
+                          <div className="click-count">
+                            x{clickCounts[`${r}-${c}`]}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))
             )}
@@ -878,11 +962,16 @@ export default function Home() {
                         {player.id === playerId && ' (You)'}
                         {player.hasWon && ' 🏆'}
                       </h3>
-                      <div className="player-progress">
-                        {player.selected ? 
-                          `${player.selected.flat().filter(Boolean).length - 1}/24` : 
-                          '0/24'
-                        }
+                      <div className="player-stats">
+                        <div className="player-progress">
+                          {player.selected ? 
+                            `${player.selected.flat().filter(Boolean).length - 1}/24` : 
+                            '0/24'
+                          }
+                        </div>
+                        <div className="player-points">
+                          🏆 {(player.points || 0).toLocaleString()}
+                        </div>
                       </div>
                     </div>
                     <div className="mini-bingo-grid">
@@ -1008,10 +1097,27 @@ export default function Home() {
           font-size: 14px;
         }
         
-        .player-name {
+        .player-info {
+          text-align: center;
           margin-bottom: ${isMobile ? '16px' : '24px'};
+        }
+        
+        .player-name {
+          margin: 0 0 8px 0;
           font-weight: 500;
           font-size: ${isMobile ? '1rem' : isTablet ? '1.25rem' : '1.5rem'};
+        }
+        
+        .points-display {
+          background: linear-gradient(135deg, #FFD23F 0%, #FF6B35 100%);
+          color: white;
+          padding: 8px 16px;
+          border-radius: 20px;
+          font-weight: 700;
+          font-size: ${isMobile ? '1rem' : '1.2rem'};
+          display: inline-block;
+          box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
         
         .back-btn {
@@ -1199,16 +1305,53 @@ export default function Home() {
           animation: bounce 1s ease-in-out infinite;
         }
         
-        .cell-text {
-          font-weight: 600;
-          font-size: ${isMobile ? '0.6rem' : isTablet ? '0.75rem' : '0.85rem'};
-          line-height: 1.1;
-          padding: ${isMobile ? '4px' : isTablet ? '6px' : '8px'};
-          text-align: center;
+        .cell-content {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
           position: relative;
           z-index: 3;
+        }
+        
+        .cell-text {
+          font-weight: 600;
+          font-size: ${isMobile ? '0.55rem' : isTablet ? '0.65rem' : '0.75rem'};
+          line-height: 1.1;
+          text-align: center;
           word-break: break-word;
           hyphens: auto;
+          margin-bottom: 2px;
+        }
+        
+        .cell-info {
+          display: flex;
+          gap: 4px;
+          align-items: center;
+          justify-content: center;
+          margin-top: 2px;
+        }
+        
+        .point-value {
+          background: rgba(255, 255, 255, 0.9);
+          color: #FF6B35;
+          font-size: ${isMobile ? '0.6rem' : '0.7rem'};
+          font-weight: 700;
+          padding: 1px 4px;
+          border-radius: 8px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        
+        .click-count {
+          background: #F7931E;
+          color: white;
+          font-size: ${isMobile ? '0.5rem' : '0.6rem'};
+          font-weight: 600;
+          padding: 1px 3px;
+          border-radius: 6px;
+          min-width: 16px;
+          text-align: center;
         }
         
         .grid-cell.free .cell-text {
@@ -1465,13 +1608,29 @@ export default function Home() {
           font-family: "Inter", sans-serif;
         }
         
+        .player-stats {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          align-items: flex-end;
+        }
+        
         .player-progress {
           background: #FF6B35;
           color: white;
-          padding: 4px 8px;
-          border-radius: 12px;
-          font-size: 0.8rem;
+          padding: 3px 6px;
+          border-radius: 10px;
+          font-size: 0.7rem;
           font-weight: 600;
+        }
+        
+        .player-points {
+          background: #FFD23F;
+          color: #FF6B35;
+          padding: 3px 6px;
+          border-radius: 10px;
+          font-size: 0.7rem;
+          font-weight: 700;
         }
         
         .mini-bingo-grid {
