@@ -57,6 +57,9 @@ export default function Home() {
   // Instructions dialog state
   const [instructionsOpen, setInstructionsOpen] = useState(false)
   
+  // Stop game dialog state
+  const [stopGameDialogOpen, setStopGameDialogOpen] = useState(false)
+  
   // Simple responsive detection using window width
   const [isMobile, setIsMobile] = useState(false)
   const [isTablet, setIsTablet] = useState(false)
@@ -378,6 +381,27 @@ export default function Home() {
     }
   }
 
+  // Stop game function (host only)
+  const handleStopGame = async () => {
+    if (!isMultiplayer || !playerId || !roomCode) return
+    
+    try {
+      const response = await fetch(`/api/games/${roomCode}/stop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId })
+      })
+      
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error)
+      
+      setStopGameDialogOpen(false)
+      setBingo(true) // Trigger the win dialog
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   // Show lobby if in menu mode
   if (gameMode === 'menu') {
     return (
@@ -673,6 +697,16 @@ export default function Home() {
             >
               👥
             </button>
+            {/* Stop Game button - only visible to host */}
+            {gameState?.players?.find(p => p.id === playerId)?.isHost && gameState?.status !== 'finished' && (
+              <button
+                className="stop-game-btn"
+                onClick={() => setStopGameDialogOpen(true)}
+                title="End game and declare winner by highest points"
+              >
+                🛑
+              </button>
+            )}
           </div>
           <span className="player-count">👥 Players: {gameState?.players?.length || 1}</span>
           {gameState?.status === 'waiting' && (
@@ -785,7 +819,9 @@ export default function Home() {
       {bingo && (
         <div className="dialog-overlay" onClick={() => setBingo(false)}>
           <div className="dialog" onClick={(e) => e.stopPropagation()}>
-            <h2 className="dialog-title">🌅 SUNRISE BINGO! 🌅</h2>
+            <h2 className="dialog-title">
+              {gameState?.endedBy === 'host' ? '🏁 GAME ENDED!' : '🌅 SUNRISE BINGO! 🌅'}
+            </h2>
             <div className="dialog-content">
               <div className="winner-box">
                 <div className="congratulations">
@@ -797,8 +833,31 @@ export default function Home() {
                   }
                 </div>
                 <div className="subtitle">
-                  You've caught the sunrise! ✨
+                  {gameState?.endedBy === 'host' ? 
+                    `🏆 Winner by highest points! 🏆` :
+                    `You've caught the sunrise! ✨`
+                  }
                 </div>
+                
+                {gameState?.endedBy === 'host' && gameState?.players && (
+                  <div className="final-standings">
+                    <h4>Final Standings:</h4>
+                    <div className="standings-list">
+                      {gameState.players
+                        .sort((a, b) => (b.points || 0) - (a.points || 0))
+                        .map((player, index) => (
+                          <div key={player.id} className={`standing-item ${player.id === gameState.winner ? 'winner' : ''}`}>
+                            <span className="rank">#{index + 1}</span>
+                            <span className="player-name">
+                              {player.name}
+                              {player.id === gameState.winner && ' 👑'}
+                            </span>
+                            <span className="player-points">🏆 {(player.points || 0).toLocaleString()}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="dialog-actions">
@@ -1004,6 +1063,54 @@ export default function Home() {
         </div>
       )}
 
+      {/* Stop Game Dialog */}
+      {stopGameDialogOpen && (
+        <div className="dialog-overlay" onClick={() => setStopGameDialogOpen(false)}>
+          <div className="dialog" onClick={(e) => e.stopPropagation()}>
+            <h2 className="dialog-title">🛑 Stop Game</h2>
+            
+            <div className="dialog-content">
+              <div className="stop-game-warning">
+                <p>Are you sure you want to end this game?</p>
+                <p>The player with the highest points will be declared the winner.</p>
+                
+                {gameState && (
+                  <div className="current-standings">
+                    <h4>Current Standings:</h4>
+                    <div className="standings-list">
+                      {gameState.players
+                        .sort((a, b) => (b.points || 0) - (a.points || 0))
+                        .map((player, index) => (
+                          <div key={player.id} className="standing-item">
+                            <span className="rank">#{index + 1}</span>
+                            <span className="player-name">{player.name}</span>
+                            <span className="player-points">🏆 {(player.points || 0).toLocaleString()}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="dialog-actions">
+              <button 
+                className="stop-confirm-btn"
+                onClick={handleStopGame}
+              >
+                🏁 End Game Now
+              </button>
+              <button 
+                className="close-btn"
+                onClick={() => setStopGameDialogOpen(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Success Notification */}
       {shareSuccess && (
         <div className="notification">
@@ -1056,7 +1163,7 @@ export default function Home() {
           box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
         
-        .share-btn, .players-btn {
+        .share-btn, .players-btn, .stop-game-btn {
           background: white;
           border: 2px solid #FFD23F;
           border-radius: 50%;
@@ -1070,13 +1177,23 @@ export default function Home() {
           transition: all 0.3s ease;
         }
         
-        .share-btn:hover, .players-btn:hover {
+        .share-btn:hover, .players-btn:hover, .stop-game-btn:hover {
           transform: scale(1.1);
           box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         
         .players-btn {
           border-color: #F7931E;
+        }
+        
+        .stop-game-btn {
+          border-color: #dc3545;
+          color: #dc3545;
+        }
+        
+        .stop-game-btn:hover {
+          background: rgba(220, 53, 69, 0.1);
+          border-color: #c82333;
         }
         
         .player-count, .waiting {
@@ -1414,6 +1531,32 @@ export default function Home() {
           background: rgba(255, 211, 63, 0.15);
           border: 1px solid rgba(255, 211, 63, 0.4);
           margin-bottom: 16px;
+        }
+        
+        .final-standings {
+          margin-top: 20px;
+          text-align: left;
+        }
+        
+        .final-standings h4 {
+          color: #FF6B35;
+          margin: 0 0 12px 0;
+          font-size: 1.1rem;
+          font-family: "Inter", sans-serif;
+          font-weight: 700;
+          text-align: center;
+        }
+        
+        .standing-item.winner {
+          background: linear-gradient(135deg, #FFD23F 0%, #FF6B35 100%);
+          color: white;
+          font-weight: 700;
+        }
+        
+        .standing-item.winner .rank,
+        .standing-item.winner .player-name,
+        .standing-item.winner .player-points {
+          color: white;
         }
         
         .congratulations {
@@ -1804,6 +1947,83 @@ export default function Home() {
           background: linear-gradient(135deg, #F7931E 0%, #FF6B35 100%);
           transform: translateY(-1px);
           box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
+        }
+        
+        .stop-game-warning {
+          text-align: center;
+          color: #333;
+          line-height: 1.6;
+        }
+        
+        .current-standings {
+          margin-top: 20px;
+          background: rgba(255, 248, 225, 0.8);
+          border-radius: 8px;
+          padding: 16px;
+          border: 1px solid rgba(255, 211, 63, 0.3);
+        }
+        
+        .current-standings h4 {
+          color: #FF6B35;
+          margin: 0 0 12px 0;
+          font-size: 1.1rem;
+          font-family: "Inter", sans-serif;
+          font-weight: 700;
+        }
+        
+        .standings-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        
+        .standing-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px 12px;
+          background: white;
+          border-radius: 6px;
+          border: 1px solid #FFD23F;
+        }
+        
+        .rank {
+          font-weight: 700;
+          color: #FF6B35;
+          min-width: 30px;
+        }
+        
+        .player-name {
+          flex: 1;
+          text-align: left;
+          margin-left: 12px;
+          font-weight: 600;
+        }
+        
+        .player-points {
+          color: #F7931E;
+          font-weight: 700;
+          font-size: 0.9rem;
+        }
+        
+        .stop-confirm-btn {
+          background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 8px;
+          font-weight: 700;
+          font-size: 1rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          margin-right: 12px;
+          box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+        
+        .stop-confirm-btn:hover {
+          background: linear-gradient(135deg, #c82333 0%, #dc3545 100%);
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
         }
       `}</style>
     </div>
