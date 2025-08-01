@@ -13,7 +13,8 @@ export default function GameLobby({
   onCreateGame,
   onJoinGame,
   isMobile,
-  onAbout
+  onAbout,
+  onInstructions
 }) {
   return (
     <div className="lobby-container">
@@ -136,14 +137,23 @@ export default function GameLobby({
         )}
       </div>
       
-      {/* About button */}
-      <button
-        className="about-btn-lobby"
-        onClick={onAbout}
-        title="Learn about the game's origin"
-      >
-        ℹ️ About this game
-      </button>
+      {/* Button row */}
+      <div className="bottom-buttons">
+        <button
+          className="instructions-btn-lobby"
+          onClick={onInstructions}
+          title="How to play"
+        >
+          📖 How to Play
+        </button>
+        <button
+          className="about-btn-lobby"
+          onClick={onAbout}
+          title="Learn about the game's origin"
+        >
+          ℹ️ About this game
+        </button>
+      </div>
       
       <style jsx>{`
         .lobby-container {
@@ -413,8 +423,15 @@ export default function GameLobby({
           background: rgba(255, 211, 63, 0.2);
         }
         
-        .about-btn-lobby {
+        .bottom-buttons {
+          display: flex;
+          gap: 16px;
           margin-top: 24px;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+        
+        .about-btn-lobby, .instructions-btn-lobby {
           background: rgba(255, 255, 255, 0.2);
           border: 2px solid rgba(255, 255, 255, 0.3);
           color: white;
@@ -427,7 +444,7 @@ export default function GameLobby({
           backdrop-filter: blur(10px);
         }
         
-        .about-btn-lobby:hover {
+        .about-btn-lobby:hover, .instructions-btn-lobby:hover {
           background: rgba(255, 255, 255, 0.3);
           border-color: rgba(255, 255, 255, 0.5);
           transform: translateY(-1px);

@@ -47,6 +47,12 @@ export default function Home() {
   // About dialog state
   const [aboutDialogOpen, setAboutDialogOpen] = useState(false)
   
+  // Player boards view state
+  const [playersViewOpen, setPlayersViewOpen] = useState(false)
+  
+  // Instructions dialog state
+  const [instructionsOpen, setInstructionsOpen] = useState(false)
+  
   // Simple responsive detection using window width
   const [isMobile, setIsMobile] = useState(false)
   const [isTablet, setIsTablet] = useState(false)
@@ -330,6 +336,7 @@ export default function Home() {
           onJoinGame={handleJoinGame}
           isMobile={isMobile}
           onAbout={() => setAboutDialogOpen(true)}
+          onInstructions={() => setInstructionsOpen(true)}
         />
         
         {error && (
@@ -346,6 +353,61 @@ export default function Home() {
         >
           Play Single Player
         </button>
+
+        {/* Instructions Dialog for Menu */}
+        {instructionsOpen && (
+          <div className="dialog-overlay" onClick={() => setInstructionsOpen(false)}>
+            <div className="dialog instructions-dialog" onClick={(e) => e.stopPropagation()}>
+              <h2 className="dialog-title">🌅 How to Play Sunrise Semester Bingo</h2>
+              
+              <div className="dialog-content">
+                <div className="instructions-content">
+                  <div className="instructions-intro">
+                    <p>Welcome to the most entertaining way to stay engaged during meetings, shares, and conversations! 🎉</p>
+                  </div>
+
+                  <h3>🎯 The Goal</h3>
+                  <p>Listen carefully to speakers during your meeting and mark off phrases as you hear them. Get five in a row (horizontal, vertical, or diagonal) and you've got BINGO! It's that simple... and that fun!</p>
+
+                  <h3>🎮 How to Play</h3>
+                  <ol className="instructions-list">
+                    <li><strong>Choose Your Phrases:</strong> Pick a category that matches your meeting type. "Sunrise Regulars" for general meetings, "Steps & Traditions" for step meetings, or go wild with "Clutter Words" if you want a real challenge!</li>
+                    
+                    <li><strong>Start Listening:</strong> As speakers share, keep your ears open for the phrases on your card. When you hear one, click it! The square will light up with a satisfying orange glow.</li>
+                    
+                    <li><strong>Watch Your Progress:</strong> The FREE space in the center is your gift - it's always marked. Use it wisely as part of your winning strategy!</li>
+                    
+                    <li><strong>Get Five in a Row:</strong> Line them up horizontally, vertically, or diagonally. When you hit that magical fifth square... 🎊 BINGO! 🎊</li>
+                  </ol>
+
+                  <h3>🌟 Pro Tips</h3>
+                  <ul className="pro-tips">
+                    <li>🎧 <strong>Stay Present:</strong> The beauty of this game is it actually helps you listen better. You might be surprised what wisdom you catch while hunting for phrases!</li>
+                    
+                    <li>👥 <strong>Multiplayer Magic:</strong> Create a room and share the code with friends. You can peek at their boards with the players button - friendly competition makes everything better!</li>
+                    
+                    <li>🎲 <strong>Mix It Up:</strong> Each game generates a random selection from your chosen category, so no two games are the same!</li>
+                    
+                    <li>😄 <strong>Keep It Light:</strong> Remember Rule 62 - don't take yourself too seriously! This is about fun and connection, not perfection.</li>
+                  </ul>
+
+                  <h3>🏆 Winning & Beyond</h3>
+                  <p>When you get BINGO, celebrate! But don't stop there - you can keep playing to see how many squares you can fill. In multiplayer games, see who can get the most squares marked by the end of the meeting!</p>
+
+                  <div className="instructions-footer">
+                    <p><em>Remember: The real win is staying engaged, having fun, and maybe learning something new along the way. Happy listening! 🌅</em></p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="dialog-actions">
+                <button className="close-btn primary" onClick={() => setInstructionsOpen(false)}>
+                  Got it! Let's Play!
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* About Dialog for Menu */}
         {aboutDialogOpen && (
@@ -539,6 +601,13 @@ export default function Home() {
             >
               📤
             </button>
+            <button
+              className="players-btn"
+              onClick={() => setPlayersViewOpen(true)}
+              title="View other players' boards"
+            >
+              👥
+            </button>
           </div>
           <span className="player-count">👥 Players: {gameState?.players?.length || 1}</span>
           {gameState?.status === 'waiting' && (
@@ -586,6 +655,15 @@ export default function Home() {
         title="Learn about the game's origin"
       >
         ℹ️ About
+      </button>
+      
+      {/* Instructions button */}
+      <button
+        className="instructions-btn"
+        onClick={() => setInstructionsOpen(true)}
+        title="How to play"
+      >
+        📖 How to Play
       </button>
       
       {/* Bingo Card */}
@@ -729,6 +807,114 @@ export default function Home() {
         </div>
       )}
 
+      {/* Instructions Dialog */}
+      {instructionsOpen && (
+        <div className="dialog-overlay" onClick={() => setInstructionsOpen(false)}>
+          <div className="dialog instructions-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2 className="dialog-title">🌅 How to Play Sunrise Semester Bingo</h2>
+            
+            <div className="dialog-content">
+              <div className="instructions-content">
+                <div className="instructions-intro">
+                  <p>Welcome to the most entertaining way to stay engaged during meetings, shares, and conversations! 🎉</p>
+                </div>
+
+                <h3>🎯 The Goal</h3>
+                <p>Listen carefully to speakers during your meeting and mark off phrases as you hear them. Get five in a row (horizontal, vertical, or diagonal) and you've got BINGO! It's that simple... and that fun!</p>
+
+                <h3>🎮 How to Play</h3>
+                <ol className="instructions-list">
+                  <li><strong>Choose Your Phrases:</strong> Pick a category that matches your meeting type. "Sunrise Regulars" for general meetings, "Steps & Traditions" for step meetings, or go wild with "Clutter Words" if you want a real challenge!</li>
+                  
+                  <li><strong>Start Listening:</strong> As speakers share, keep your ears open for the phrases on your card. When you hear one, click it! The square will light up with a satisfying orange glow.</li>
+                  
+                  <li><strong>Watch Your Progress:</strong> The FREE space in the center is your gift - it's always marked. Use it wisely as part of your winning strategy!</li>
+                  
+                  <li><strong>Get Five in a Row:</strong> Line them up horizontally, vertically, or diagonally. When you hit that magical fifth square... 🎊 BINGO! 🎊</li>
+                </ol>
+
+                <h3>🌟 Pro Tips</h3>
+                <ul className="pro-tips">
+                  <li>🎧 <strong>Stay Present:</strong> The beauty of this game is it actually helps you listen better. You might be surprised what wisdom you catch while hunting for phrases!</li>
+                  
+                  <li>👥 <strong>Multiplayer Magic:</strong> Create a room and share the code with friends. You can peek at their boards with the players button - friendly competition makes everything better!</li>
+                  
+                  <li>🎲 <strong>Mix It Up:</strong> Each game generates a random selection from your chosen category, so no two games are the same!</li>
+                  
+                  <li>😄 <strong>Keep It Light:</strong> Remember Rule 62 - don't take yourself too seriously! This is about fun and connection, not perfection.</li>
+                </ul>
+
+                <h3>🏆 Winning & Beyond</h3>
+                <p>When you get BINGO, celebrate! But don't stop there - you can keep playing to see how many squares you can fill. In multiplayer games, see who can get the most squares marked by the end of the meeting!</p>
+
+                <div className="instructions-footer">
+                  <p><em>Remember: The real win is staying engaged, having fun, and maybe learning something new along the way. Happy listening! 🌅</em></p>
+                </div>
+              </div>
+            </div>
+
+            <div className="dialog-actions">
+              <button className="close-btn primary" onClick={() => setInstructionsOpen(false)}>
+                Got it! Let's Play!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Players View Dialog */}
+      {playersViewOpen && isMultiplayer && gameState && (
+        <div className="dialog-overlay" onClick={() => setPlayersViewOpen(false)}>
+          <div className="dialog players-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2 className="dialog-title">Players' Boards</h2>
+            
+            <div className="dialog-content">
+              <div className="players-grid">
+                {gameState.players.map((player) => (
+                  <div key={player.id} className="player-board">
+                    <div className="player-header">
+                      <h3 className="player-name">
+                        {player.name}
+                        {player.id === playerId && ' (You)'}
+                        {player.hasWon && ' 🏆'}
+                      </h3>
+                      <div className="player-progress">
+                        {player.selected ? 
+                          `${player.selected.flat().filter(Boolean).length - 1}/24` : 
+                          '0/24'
+                        }
+                      </div>
+                    </div>
+                    <div className="mini-bingo-grid">
+                      {player.grid && player.grid.map((row, r) =>
+                        row.map((phrase, c) => (
+                          <div
+                            key={`${r}-${c}`}
+                            className={`mini-cell ${
+                              player.selected && player.selected[r] && player.selected[r][c] ? 'selected' : ''
+                            } ${r === 2 && c === 2 ? 'free' : ''}`}
+                            title={phrase}
+                          >
+                            {r === 2 && c === 2 ? 'F' : 
+                             player.selected && player.selected[r] && player.selected[r][c] ? '✓' : ''}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="dialog-actions">
+              <button className="close-btn" onClick={() => setPlayersViewOpen(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Success Notification */}
       {shareSuccess && (
         <div className="notification">
@@ -781,7 +967,7 @@ export default function Home() {
           box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
         
-        .share-btn {
+        .share-btn, .players-btn {
           background: white;
           border: 2px solid #FFD23F;
           border-radius: 50%;
@@ -795,9 +981,13 @@ export default function Home() {
           transition: all 0.3s ease;
         }
         
-        .share-btn:hover {
+        .share-btn:hover, .players-btn:hover {
           transform: scale(1.1);
           box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .players-btn {
+          border-color: #F7931E;
         }
         
         .player-count, .waiting {
@@ -868,6 +1058,31 @@ export default function Home() {
         }
         
         .about-btn:hover {
+          background: #FF6B35;
+          color: white;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .instructions-btn {
+          position: ${isMobile ? 'static' : 'absolute'};
+          bottom: ${isMobile ? 'auto' : '20px'};
+          right: ${isMobile ? 'auto' : '20px'};
+          align-self: ${isMobile ? 'flex-end' : 'auto'};
+          margin-bottom: ${isMobile ? '16px' : '0'};
+          background: rgba(255, 255, 255, 0.9);
+          border: 2px solid #F7931E;
+          color: #FF6B35;
+          padding: 8px 16px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
+          z-index: 10;
+          transition: all 0.3s ease;
+          font-size: ${isMobile ? '14px' : '16px'};
+        }
+        
+        .instructions-btn:hover {
           background: #FF6B35;
           color: white;
           transform: translateY(-1px);
@@ -1210,6 +1425,93 @@ export default function Home() {
           to { transform: translate(-50%, 0); opacity: 1; }
         }
         
+        .players-dialog {
+          max-width: 800px;
+          max-height: 85vh;
+        }
+        
+        .players-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 20px;
+          padding: 10px 0;
+        }
+        
+        .player-board {
+          background: rgba(255, 248, 225, 0.7);
+          border: 2px solid #FFD23F;
+          border-radius: 12px;
+          padding: 16px;
+          transition: all 0.3s ease;
+        }
+        
+        .player-board:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .player-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+        
+        .player-name {
+          color: #FF6B35;
+          font-weight: 700;
+          font-size: 1rem;
+          margin: 0;
+          font-family: "Inter", sans-serif;
+        }
+        
+        .player-progress {
+          background: #FF6B35;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 0.8rem;
+          font-weight: 600;
+        }
+        
+        .mini-bingo-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 2px;
+          background: #FF6B35;
+          border-radius: 8px;
+          padding: 4px;
+        }
+        
+        .mini-cell {
+          aspect-ratio: 1;
+          background: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.7rem;
+          font-weight: 600;
+          border-radius: 2px;
+          transition: all 0.2s ease;
+        }
+        
+        .mini-cell.selected {
+          background: #F7931E;
+          color: white;
+        }
+        
+        .mini-cell.free {
+          background: #FFD23F;
+          color: #FF6B35;
+          font-weight: 800;
+        }
+        
+        .mini-cell:hover {
+          transform: scale(1.1);
+          z-index: 1;
+          position: relative;
+        }
+        
         .about-dialog {
           max-width: 600px;
           max-height: 80vh;
@@ -1248,6 +1550,101 @@ export default function Home() {
           margin-top: 24px !important;
           border-top: 1px solid #eee;
           padding-top: 16px;
+        }
+        
+        .instructions-dialog {
+          max-width: 700px;
+          max-height: 85vh;
+        }
+        
+        .instructions-content {
+          line-height: 1.7;
+          color: #333;
+        }
+        
+        .instructions-intro {
+          text-align: center;
+          background: rgba(255, 211, 63, 0.15);
+          border-radius: 8px;
+          padding: 16px;
+          margin-bottom: 20px;
+        }
+        
+        .instructions-intro p {
+          margin: 0;
+          font-size: 1.1rem;
+          color: #FF6B35;
+          font-weight: 600;
+        }
+        
+        .instructions-content h3 {
+          color: #FF6B35;
+          font-family: "Inter", sans-serif;
+          font-weight: 700;
+          font-size: 1.3rem;
+          margin-top: 28px;
+          margin-bottom: 12px;
+        }
+        
+        .instructions-list {
+          padding-left: 20px;
+          margin-bottom: 20px;
+        }
+        
+        .instructions-list li {
+          margin-bottom: 16px;
+          padding-left: 8px;
+        }
+        
+        .instructions-list strong {
+          color: #F7931E;
+        }
+        
+        .pro-tips {
+          list-style: none;
+          padding-left: 0;
+          margin-bottom: 20px;
+        }
+        
+        .pro-tips li {
+          margin-bottom: 14px;
+          padding-left: 30px;
+          position: relative;
+        }
+        
+        .pro-tips li strong {
+          color: #F7931E;
+        }
+        
+        .instructions-footer {
+          background: rgba(255, 248, 225, 0.8);
+          border-radius: 8px;
+          padding: 16px;
+          margin-top: 24px;
+          text-align: center;
+          border: 1px solid rgba(255, 211, 63, 0.3);
+        }
+        
+        .instructions-footer p {
+          margin: 0;
+          color: #666;
+          font-size: 0.95rem;
+        }
+        
+        .close-btn.primary {
+          background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+          color: white;
+          padding: 12px 32px;
+          font-weight: 700;
+          font-size: 1rem;
+          border-radius: 25px;
+          box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+        
+        .close-btn.primary:hover {
+          background: linear-gradient(135deg, #F7931E 0%, #FF6B35 100%);
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
         }
       `}</style>
     </div>
