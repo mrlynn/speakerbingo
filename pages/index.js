@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import GameLobby from '../components/GameLobby'
+import MessageBanner from '../components/MessageBanner'
+import PlayerStatsModal from '../components/PlayerStatsModal'
 import { PHRASE_CATEGORIES, getRandomPhrasesFromCategory } from '../lib/phrases'
+import { getTodaysChallenge, checkChallengeCompletion, getChallengeProgressMessage } from '../lib/dailyChallenges'
+import { 
+  loadPlayerProfile, 
+  savePlayerProfile, 
+  updateGameStats, 
+  updateChallengeCompletion,
+  getPlayerLevel,
+  ACHIEVEMENTS 
+} from '../lib/playerProfile'
 
 function generateGrid(categoryKey = 'sunrise-regulars') {
   const chosen = getRandomPhrasesFromCategory(categoryKey, 24)
@@ -60,6 +71,21 @@ export default function Home() {
   // Stop game dialog state
   const [stopGameDialogOpen, setStopGameDialogOpen] = useState(false)
   
+  // Daily challenge state
+  const [todaysChallenge, setTodaysChallenge] = useState(null)
+  const [challengeCompleted, setChallengeCompleted] = useState(false)
+  const [challengeProgress, setChallengeProgress] = useState('')
+  const [gameStartTime, setGameStartTime] = useState(null)
+  const [bonusPoints, setBonusPoints] = useState(0)
+  const [challengeCompletionNotification, setChallengeCompletionNotification] = useState(null)
+  const [challengeDialogOpen, setChallengeDialogOpen] = useState(false)
+  
+  // Player profile state
+  const [playerProfile, setPlayerProfile] = useState(null)
+  const [newAchievements, setNewAchievements] = useState([])
+  const [achievementNotification, setAchievementNotification] = useState(null)
+  const [statsModalOpen, setStatsModalOpen] = useState(false)
+  
   // Simple responsive detection using window width
   const [isMobile, setIsMobile] = useState(false)
   const [isTablet, setIsTablet] = useState(false)
@@ -73,6 +99,26 @@ export default function Home() {
     handleResize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Initialize player profile and daily challenge
+  useEffect(() => {
+    // Load player profile
+    const profile = loadPlayerProfile()
+    setPlayerProfile(profile)
+    
+    // Set default player name if available
+    if (profile.preferences.defaultName && profile.preferences.rememberName) {
+      setPlayerName(profile.preferences.defaultName)
+    }
+    
+    // Initialize daily challenge
+    const challenge = getTodaysChallenge()
+    setTodaysChallenge(challenge)
+    
+    // Check if challenge was already completed today
+    const completedToday = localStorage.getItem(`challenge_completed_${challenge.date}`)
+    setChallengeCompleted(!!completedToday)
   }, [])
 
   // Check for room code in URL on component mount
@@ -93,6 +139,7 @@ export default function Home() {
       setSelected(Array(5).fill().map(() => Array(5).fill(false)))
       setPoints(0)
       setClickCounts({})
+      setGameStartTime(new Date()) // Track game start time for challenges
     }
   }, [gameMode, grid, selectedCategory])
 
@@ -150,6 +197,122 @@ export default function Home() {
     return false
   }, [])
 
+  // Check challenge progress
+  const checkChallengeProgress = useCallback(() => {
+    if (!todaysChallenge || challengeCompleted) return
+
+    const gameStats = {
+      points: points,
+      hasBingo: bingo,
+      markedSquares: selected.flat().filter(Boolean).length - 1, // -1 for FREE space
+      maxClicksOnSquare: Math.max(...Object.values(clickCounts), 0),
+      timeToCompletion: gameStartTime ? (new Date() - gameStartTime) / 1000 : 0,
+      usedOnlyEdgesAndCorners: checkOnlyEdgesAndCorners(),
+      edgeOnlyPoints: calculateEdgeOnlyPoints(),
+      isMultiplayer: isMultiplayer,
+      rank: getRank()
+    }
+
+    const isCompleted = checkChallengeCompletion(todaysChallenge, gameStats)
+    
+    if (isCompleted && !challengeCompleted) {
+      setChallengeCompleted(true)
+      setBonusPoints(todaysChallenge.reward)
+      setPoints(prev => prev + todaysChallenge.reward)
+      localStorage.setItem(`challenge_completed_${todaysChallenge.date}`, 'true')
+      
+      // Update player profile with challenge completion
+      if (playerProfile) {
+        const achievements = updateChallengeCompletion(playerProfile, todaysChallenge.reward)
+        if (achievements.length > 0) {
+          setNewAchievements(prev => [...prev, ...achievements])
+        }
+        savePlayerProfile(playerProfile)
+      }
+      
+      // Show completion notification
+      setChallengeCompletionNotification({
+        title: 'Daily Challenge Complete!',
+        message: `${todaysChallenge.title} completed!`,
+        reward: todaysChallenge.reward,
+        icon: todaysChallenge.icon
+      })
+      
+      // Auto-hide notification after 5 seconds
+      setTimeout(() => setChallengeCompletionNotification(null), 5000)
+    } else {
+      setChallengeProgress(getChallengeProgressMessage(todaysChallenge, gameStats))
+    }
+  }, [todaysChallenge, challengeCompleted, points, bingo, selected, clickCounts, gameStartTime, isMultiplayer])
+
+  // Helper functions for challenge checking
+  const checkOnlyEdgesAndCorners = () => {
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 5; c++) {
+        if (selected[r] && selected[r][c] && r !== 2 && c !== 2) {
+          const isEdge = r === 0 || r === 4 || c === 0 || c === 4
+          if (!isEdge) return false
+        }
+      }
+    }
+    return true
+  }
+
+  const calculateEdgeOnlyPoints = () => {
+    let edgePoints = 0
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 5; c++) {
+        if (selected[r] && selected[r][c] && (r === 0 || r === 4 || c === 0 || c === 4)) {
+          const clicks = clickCounts[`${r}-${c}`] || 1
+          edgePoints += calculatePoints(r, c, clicks)
+        }
+      }
+    }
+    return edgePoints
+  }
+
+  const getRank = () => {
+    if (!isMultiplayer || !gameState) return 1
+    const sortedPlayers = gameState.players.sort((a, b) => (b.points || 0) - (a.points || 0))
+    return sortedPlayers.findIndex(p => p.id === playerId) + 1
+  }
+
+  // Save game results to player profile
+  const saveGameResults = useCallback((gameCompleted = false) => {
+    if (!playerProfile) return
+
+    const gameResult = {
+      points: points,
+      hasBingo: bingo || gameCompleted,
+      markedSquares: selected.flat().filter(Boolean).length - 1, // -1 for FREE space
+      maxClicksOnSquare: Math.max(...Object.values(clickCounts), 0),
+      timeToCompletion: gameStartTime ? (new Date() - gameStartTime) / 1000 : 0,
+      usedOnlyEdgesAndCorners: checkOnlyEdgesAndCorners(),
+      isMultiplayer: isMultiplayer,
+      category: selectedCategory,
+      date: new Date().toISOString()
+    }
+
+    const { profile: updatedProfile, newAchievements: achievements } = updateGameStats(playerProfile, gameResult)
+    
+    // Update player name preference
+    if (playerName && playerName !== updatedProfile.preferences.defaultName) {
+      updatedProfile.preferences.defaultName = playerName
+      updatedProfile.name = playerName
+    }
+
+    setPlayerProfile(updatedProfile)
+    savePlayerProfile(updatedProfile)
+
+    // Show achievement notifications
+    if (achievements.length > 0) {
+      setNewAchievements(achievements)
+      // Show first achievement
+      setAchievementNotification(achievements[0])
+      setTimeout(() => setAchievementNotification(null), 4000)
+    }
+  }, [playerProfile, points, bingo, selected, clickCounts, gameStartTime, isMultiplayer, selectedCategory, playerName])
+
   const handleClick = async (r, c) => {
     if (r === 2 && c === 2) return // FREE space
     if (bingo) return // Game over
@@ -180,7 +343,13 @@ export default function Home() {
       setBingo(true)
       // Add BINGO bonus points
       setPoints(newPoints + 1000)
+      
+      // Save game results when BINGO is achieved
+      setTimeout(() => saveGameResults(true), 200)
     }
+    
+    // Check challenge progress after state updates
+    setTimeout(() => checkChallengeProgress(), 100)
     
     // Update multiplayer game
     if (isMultiplayer && playerId) {
@@ -233,6 +402,7 @@ export default function Home() {
       })
       setPoints(0)
       setClickCounts({})
+      setGameStartTime(new Date()) // Track game start time for challenges
       setIsMultiplayer(true)
       setGameMode('multiplayer')
     } catch (err) {
@@ -278,6 +448,7 @@ export default function Home() {
       setSelected(player.selected)
       setPoints(player.points || 0)
       setClickCounts(player.clickCounts || {})
+      setGameStartTime(new Date()) // Track game start time for challenges
       setIsMultiplayer(true)
       setGameMode('multiplayer')
     } catch (err) {
@@ -370,8 +541,8 @@ export default function Home() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Join my Sunrise Semester Bingo Game!',
-          text: `Come play Sunrise Semester Bingo with me! Room code: ${roomCode}`,
+          title: 'Join my Sunrise Semester Speaker Bingo Game!',
+          text: `Come play Sunrise Semester Speaker Bingo with me! Room code: ${roomCode}`,
           url: `${window.location.origin}${window.location.pathname}?room=${roomCode}`
         })
         setShareDialogOpen(false)
@@ -399,6 +570,19 @@ export default function Home() {
       setBingo(true) // Trigger the win dialog
     } catch (err) {
       setError(err.message)
+    }
+  }
+
+  // Banner click handlers
+  const handleChallengeClick = (challenge) => {
+    setChallengeDialogOpen(true)
+  }
+
+  const handleAdClick = (ad) => {
+    if (ad.cta && ad.link) {
+      window.open(ad.link, '_blank')
+    } else if (ad.action === 'share') {
+      setShareDialogOpen(true)
     }
   }
 
@@ -431,7 +615,7 @@ export default function Home() {
         {loading && <div className="loading">Loading...</div>}
         
         <button
-          className="single-player-btn"
+          className="single-player-btn sunrise-button"
           onClick={startSinglePlayer}
         >
           Play Single Player
@@ -441,7 +625,7 @@ export default function Home() {
         {instructionsOpen && (
           <div className="dialog-overlay" onClick={() => setInstructionsOpen(false)}>
             <div className="dialog instructions-dialog" onClick={(e) => e.stopPropagation()}>
-              <h2 className="dialog-title">🌅 How to Play Sunrise Semester Bingo</h2>
+              <h2 className="dialog-title">🌅 How to Play Sunrise Semester Speaker Bingo</h2>
               
               <div className="dialog-content">
                 <div className="instructions-content">
@@ -502,19 +686,19 @@ export default function Home() {
         {aboutDialogOpen && (
           <div className="dialog-overlay" onClick={() => setAboutDialogOpen(false)}>
             <div className="dialog about-dialog" onClick={(e) => e.stopPropagation()}>
-              <h2 className="dialog-title">About Sunrise Semester Bingo</h2>
+              <h2 className="dialog-title">About Sunrise Semester Speaker Bingo</h2>
               
               <div className="dialog-content">
                 <div className="about-content">
                   <p className="about-subtitle">A game that reminds us all of Rule 62: never take yourself too seriously.</p>
                   
-                  <p>Sunrise Semester Bingo is a lighthearted social game created to bring a little extra fun to everyday conversations, meetings, and presentations. Whether you're in a 9 AM check-in, a recovery circle, or just chatting with friends, this game turns common phrases into opportunities for laughter and connection.</p>
+                  <p>Sunrise Semester Speaker Bingo is a lighthearted social game created to bring a little extra fun to everyday conversations, meetings, and presentations. Whether you're in a 9 AM check-in, a recovery circle, or just chatting with friends, this game turns common phrases into opportunities for laughter and connection.</p>
                   
                   <h3>Here's how it works:</h3>
                   <p>Everyone gets a bingo card filled with words and sayings that tend to pop up in conversation—things like "let's circle back," "just for today," or "I feel seen." As you listen, you mark off each one you hear. Get five in a row? Bingo! No prizes here—just the joy of noticing and sharing a good laugh with the people around you.</p>
                   
                   <h3>Why we made this game</h3>
-                  <p>Sunrise Semester Bingo was born out of the simple desire to keep things fun. In a world where we can all get a little too serious (especially during long meetings or heartfelt shares), we wanted a playful way to stay engaged without losing the spirit of connection. Inspired by Rule 62—never take yourself too seriously—this game is our reminder to lighten up, listen well, and enjoy the moment.</p>
+                  <p>Sunrise Semester Speaker Bingo was born out of the simple desire to keep things fun. In a world where we can all get a little too serious (especially during long meetings or heartfelt shares), we wanted a playful way to stay engaged without losing the spirit of connection. Inspired by Rule 62—never take yourself too seriously—this game is our reminder to lighten up, listen well, and enjoy the moment.</p>
                   
                   <p>So grab a card, tune in, and get ready to shout "Bingo!" when you least expect it. You'll be surprised how much joy you can find in the words we say every day.</p>
                   
@@ -674,9 +858,23 @@ export default function Home() {
 
   return (
     <div className="game-container">
-      <h1 className="title">
-        Sunrise Semester Bingo
-      </h1>
+      {/* Sunrise Scene Background Elements */}
+      <div className="sun-decoration"></div>
+      <div className="sun-reflection"></div>
+      <div className="cloud cloud1"></div>
+      <div className="cloud cloud2"></div>
+      <div className="water-wave"></div>
+        
+        <h1 className="title sunrise-title">
+          Sunrise Semester Speaker Bingo
+        </h1>
+      
+      {/* Message Banner */}
+      <MessageBanner
+        onChallengeClick={handleChallengeClick}
+        onAdClick={handleAdClick}
+        isMobile={isMobile}
+      />
       
       {/* Multiplayer info */}
       {isMultiplayer && (
@@ -727,16 +925,44 @@ export default function Home() {
         <div className="player-info">
           <h2 className="player-name">
             Player: {playerName || 'Guest'}
+            {playerProfile && (
+              <span className="player-level">
+                Level {getPlayerLevel(playerProfile.stats.totalPoints).level} - {getPlayerLevel(playerProfile.stats.totalPoints).title}
+              </span>
+            )}
           </h2>
           <div className="points-display">
             🏆 {points.toLocaleString()} points
+            {bonusPoints > 0 && (
+              <span className="bonus-points">+{bonusPoints} bonus!</span>
+            )}
           </div>
+          
+          {/* Player stats summary */}
+          {playerProfile && (
+            <div className="player-stats-summary">
+              <span className="stat-item">🎯 {playerProfile.stats.totalBingos} Bingos</span>
+              <span className="stat-item">🎮 {playerProfile.stats.totalGames} Games</span>
+              {playerProfile.stats.currentStreak > 1 && (
+                <span className="stat-item">🔥 {playerProfile.stats.currentStreak} Day Streak</span>
+              )}
+            </div>
+          )}
+          
+          {/* Challenge status indicator */}
+          {todaysChallenge && (
+            <div className="challenge-status">
+              <span className={`challenge-indicator ${challengeCompleted ? 'completed' : 'active'}`}>
+                {todaysChallenge.icon} {challengeCompleted ? 'Challenge Complete!' : challengeProgress || todaysChallenge.title}
+              </span>
+            </div>
+          )}
         </div>
       )}
       
       {/* Back to menu button */}
       <button
-        className="back-btn"
+        className="back-btn sunrise-button"
         onClick={() => {
           setGameMode('menu')
           setGrid([])
@@ -754,7 +980,7 @@ export default function Home() {
       
       {/* About button */}
       <button
-        className="about-btn"
+        className="about-btn sunrise-button"
         onClick={() => setAboutDialogOpen(true)}
         title="Learn about the game's origin"
       >
@@ -763,20 +989,31 @@ export default function Home() {
       
       {/* Instructions button */}
       <button
-        className="instructions-btn"
+        className="instructions-btn sunrise-button"
         onClick={() => setInstructionsOpen(true)}
         title="How to play"
       >
         📖 How to Play
       </button>
       
+      {/* Stats button */}
+      {playerProfile && (
+        <button
+          className="stats-btn sunrise-button"
+          onClick={() => setStatsModalOpen(true)}
+          title="View your statistics and achievements"
+        >
+          📊 Stats
+        </button>
+      )}
+      
       {/* Bingo Card */}
       <div className="card-container">
-        <div className="bingo-card">
+        <div className="bingo-card sunrise-bingo-card">
           {/* BINGO Header */}
           <div className="bingo-header">
             {['B','I','N','G','O'].map((letter) => (
-              <div key={letter} className="header-cell">
+              <div key={letter} className="header-cell sunrise-header-cell">
                 {letter}
               </div>
             ))}
@@ -788,7 +1025,7 @@ export default function Home() {
               row.map((phrase, c) => (
                 <div
                   key={`${r}-${c}`}
-                  className={`grid-cell ${selected[r] && selected[r][c] ? 'selected' : ''} ${r === 2 && c === 2 ? 'free' : ''}`}
+                  className={`grid-cell sunrise-grid-cell ${selected[r] && selected[r][c] ? 'selected' : ''} ${r === 2 && c === 2 ? 'free' : ''}`}
                   onClick={() => handleClick(r, c)}
                 >
                   {r === 2 && c === 2 && <div className="free-icon">☀️</div>}
@@ -797,7 +1034,7 @@ export default function Home() {
                     <span className="cell-text">{phrase}</span>
                     {!(r === 2 && c === 2) && (
                       <div className="cell-info">
-                        <div className="point-value">
+                        <div className="point-value sunrise-point-value">
                           {calculatePoints(r, c, (clickCounts[`${r}-${c}`] || 0) + 1)}
                         </div>
                         {clickCounts[`${r}-${c}`] && (
@@ -818,8 +1055,8 @@ export default function Home() {
       {/* Winner Dialog */}
       {bingo && (
         <div className="dialog-overlay" onClick={() => setBingo(false)}>
-          <div className="dialog" onClick={(e) => e.stopPropagation()}>
-            <h2 className="dialog-title">
+          <div className="dialog sunrise-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2 className="dialog-title sunrise-dialog-title">
               {gameState?.endedBy === 'host' ? '🏁 GAME ENDED!' : '🌅 SUNRISE BINGO! 🌅'}
             </h2>
             <div className="dialog-content">
@@ -862,7 +1099,7 @@ export default function Home() {
             </div>
             <div className="dialog-actions">
               <button 
-                className="new-game-btn"
+                className="new-game-btn sunrise-button"
                 onClick={() => {
                   setBingo(false)
                   window.location.reload()
@@ -878,8 +1115,8 @@ export default function Home() {
       {/* Share Dialog */}
       {shareDialogOpen && (
         <div className="dialog-overlay" onClick={() => setShareDialogOpen(false)}>
-          <div className="dialog" onClick={(e) => e.stopPropagation()}>
-            <h2 className="dialog-title">🌅 Share Your Sunrise Game</h2>
+          <div className="dialog sunrise-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2 className="dialog-title sunrise-dialog-title">🌅 Share Your Sunrise Game</h2>
             
             <div className="dialog-content">
               <div className="room-code-display">
@@ -921,19 +1158,19 @@ export default function Home() {
       {aboutDialogOpen && (
         <div className="dialog-overlay" onClick={() => setAboutDialogOpen(false)}>
           <div className="dialog about-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2 className="dialog-title">About Sunrise Semester Bingo</h2>
+            <h2 className="dialog-title">About Sunrise Semester Speaker Bingo</h2>
             
             <div className="dialog-content">
               <div className="about-content">
                 <p className="about-subtitle">A game that reminds us all of Rule 62: never take yourself too seriously.</p>
                 
-                <p>Sunrise Semester Bingo is a lighthearted social game created to bring a little extra fun to everyday conversations, meetings, and presentations. Whether you're in a 9 AM check-in, a recovery circle, or just chatting with friends, this game turns common phrases into opportunities for laughter and connection.</p>
+                <p>Sunrise Semester Speaker Bingo is a lighthearted social game created to bring a little extra fun to everyday conversations, meetings, and presentations. Whether you're in a 9 AM check-in, a recovery circle, or just chatting with friends, this game turns common phrases into opportunities for laughter and connection.</p>
                 
                 <h3>Here's how it works:</h3>
                 <p>Everyone gets a bingo card filled with words and sayings that tend to pop up in conversation—things like "let's circle back," "just for today," or "I feel seen." As you listen, you mark off each one you hear. Get five in a row? Bingo! No prizes here—just the joy of noticing and sharing a good laugh with the people around you.</p>
                 
                 <h3>Why we made this game</h3>
-                <p>Sunrise Semester Bingo was born out of the simple desire to keep things fun. In a world where we can all get a little too serious (especially during long meetings or heartfelt shares), we wanted a playful way to stay engaged without losing the spirit of connection. Inspired by Rule 62—never take yourself too seriously—this game is our reminder to lighten up, listen well, and enjoy the moment.</p>
+                <p>Sunrise Semester Speaker Bingo was born out of the simple desire to keep things fun. In a world where we can all get a little too serious (especially during long meetings or heartfelt shares), we wanted a playful way to stay engaged without losing the spirit of connection. Inspired by Rule 62—never take yourself too seriously—this game is our reminder to lighten up, listen well, and enjoy the moment.</p>
                 
                 <p>So grab a card, tune in, and get ready to shout "Bingo!" when you least expect it. You'll be surprised how much joy you can find in the words we say every day.</p>
                 
@@ -954,7 +1191,7 @@ export default function Home() {
       {instructionsOpen && (
         <div className="dialog-overlay" onClick={() => setInstructionsOpen(false)}>
           <div className="dialog instructions-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2 className="dialog-title">🌅 How to Play Sunrise Semester Bingo</h2>
+            <h2 className="dialog-title">🌅 How to Play Sunrise Semester Speaker Bingo</h2>
             
             <div className="dialog-content">
               <div className="instructions-content">
@@ -1066,8 +1303,8 @@ export default function Home() {
       {/* Stop Game Dialog */}
       {stopGameDialogOpen && (
         <div className="dialog-overlay" onClick={() => setStopGameDialogOpen(false)}>
-          <div className="dialog" onClick={(e) => e.stopPropagation()}>
-            <h2 className="dialog-title">🛑 Stop Game</h2>
+          <div className="dialog sunrise-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2 className="dialog-title sunrise-dialog-title">🛑 Stop Game</h2>
             
             <div className="dialog-content">
               <div className="stop-game-warning">
@@ -1118,26 +1355,130 @@ export default function Home() {
         </div>
       )}
 
+      {/* Daily Challenge Dialog */}
+      {challengeDialogOpen && todaysChallenge && (
+        <div className="dialog-overlay" onClick={() => setChallengeDialogOpen(false)}>
+          <div className="dialog challenge-modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="dialog-title">{todaysChallenge.icon} Daily Challenge</h2>
+            
+            <div className="dialog-content">
+              <div className="challenge-details">
+                <div className="challenge-header">
+                  <h3 className="challenge-name">{todaysChallenge.title}</h3>
+                  <div className={`difficulty-badge difficulty-${todaysChallenge.difficulty.toLowerCase()}`}>
+                    {todaysChallenge.difficulty}
+                  </div>
+                </div>
+                
+                <div className="challenge-description">
+                  <p>{todaysChallenge.description}</p>
+                </div>
+                
+                <div className="challenge-reward-info">
+                  <div className="reward-box">
+                    <div className="reward-label">Reward</div>
+                    <div className="reward-amount">🏆 {todaysChallenge.reward} bonus points</div>
+                  </div>
+                </div>
+                
+                {challengeCompleted ? (
+                  <div className="challenge-status-box completed">
+                    <div className="status-icon">✅</div>
+                    <div className="status-text">
+                      <div className="status-title">Challenge Completed!</div>
+                      <div className="status-message">You've already earned the bonus points for today.</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="challenge-status-box active">
+                    <div className="status-icon">⏳</div>
+                    <div className="status-text">
+                      <div className="status-title">In Progress</div>
+                      <div className="status-message">
+                        {challengeProgress || 'Start playing to work on this challenge!'}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="challenge-tips">
+                  <h4>💡 Tips:</h4>
+                  <ul>
+                    <li>Challenges reset daily at midnight</li>
+                    <li>You can only complete each challenge once per day</li>
+                    <li>Bonus points are added to your current game score</li>
+                    <li>Progress is tracked automatically as you play</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="dialog-actions">
+              <button className="close-btn primary" onClick={() => setChallengeDialogOpen(false)}>
+                {challengeCompleted ? "Got it!" : "Let's Play!"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Achievement Notification */}
+      {achievementNotification && (
+        <div className="achievement-notification" onClick={() => setAchievementNotification(null)}>
+          <div className="achievement-notification-content">
+            <div className="achievement-icon">{achievementNotification.icon}</div>
+            <div className="achievement-text">
+              <div className="achievement-title">Achievement Unlocked!</div>
+              <div className="achievement-name">{achievementNotification.name}</div>
+              <div className="achievement-description">{achievementNotification.description}</div>
+              <div className="achievement-points">+{achievementNotification.points} points!</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Player Stats Modal */}
+      {statsModalOpen && (
+        <PlayerStatsModal
+          profile={playerProfile}
+          onClose={() => setStatsModalOpen(false)}
+          onProfileUpdate={(newProfile) => {
+            setPlayerProfile(newProfile)
+            savePlayerProfile(newProfile)
+          }}
+          isMobile={isMobile}
+        />
+      )}
+
+      {/* Challenge Completion Notification */}
+      {challengeCompletionNotification && (
+        <div className="challenge-notification" onClick={() => setChallengeCompletionNotification(null)}>
+          <div className="challenge-notification-content">
+            <div className="challenge-icon">{challengeCompletionNotification.icon}</div>
+            <div className="challenge-text">
+              <div className="challenge-title">{challengeCompletionNotification.title}</div>
+              <div className="challenge-message">{challengeCompletionNotification.message}</div>
+              <div className="challenge-reward">+{challengeCompletionNotification.reward} bonus points!</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         .game-container {
           padding: ${isMobile ? '16px' : '32px'};
           text-align: center;
-          background: linear-gradient(135deg, #FF6B35 0%, #F7931E 50%, #FFD23F 100%);
           min-height: 100vh;
           display: flex;
           flex-direction: column;
           align-items: center;
           position: relative;
+          z-index: 1;
         }
         
         .title {
-          font-family: "Inter", sans-serif;
-          font-weight: 800;
-          color: white;
-          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
           margin-bottom: ${isMobile ? '16px' : '24px'};
           font-size: ${isMobile ? '2rem' : isTablet ? '3rem' : '3.5rem'};
-          letter-spacing: -0.02em;
         }
         
         .multiplayer-info {
@@ -1223,6 +1564,38 @@ export default function Home() {
           margin: 0 0 8px 0;
           font-weight: 500;
           font-size: ${isMobile ? '1rem' : isTablet ? '1.25rem' : '1.5rem'};
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+        }
+        
+        .player-level {
+          font-size: 0.8rem;
+          color: #F7931E;
+          font-weight: 600;
+          background: rgba(255, 255, 255, 0.9);
+          padding: 2px 8px;
+          border-radius: 12px;
+          border: 1px solid #FFD23F;
+        }
+        
+        .player-stats-summary {
+          display: flex;
+          gap: 12px;
+          justify-content: center;
+          margin: 8px 0;
+          flex-wrap: wrap;
+        }
+        
+        .stat-item {
+          background: rgba(255, 255, 255, 0.9);
+          color: #FF6B35;
+          padding: 4px 8px;
+          border-radius: 10px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          border: 1px solid rgba(255, 211, 63, 0.5);
         }
         
         .points-display {
@@ -1235,6 +1608,49 @@ export default function Home() {
           display: inline-block;
           box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
           text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+          position: relative;
+        }
+        
+        .bonus-points {
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          background: #28a745;
+          color: white;
+          padding: 2px 6px;
+          border-radius: 10px;
+          font-size: 0.7rem;
+          font-weight: 600;
+          animation: bounce 2s ease-in-out 3;
+          box-shadow: 0 2px 6px rgba(40, 167, 69, 0.4);
+        }
+        
+        .challenge-status {
+          margin-top: 8px;
+          text-align: center;
+        }
+        
+        .challenge-indicator {
+          background: rgba(255, 255, 255, 0.9);
+          color: #FF6B35;
+          padding: 6px 12px;
+          border-radius: 15px;
+          font-size: ${isMobile ? '0.8rem' : '0.9rem'};
+          font-weight: 600;
+          border: 2px solid #FFD23F;
+          display: inline-block;
+          transition: all 0.3s ease;
+        }
+        
+        .challenge-indicator.completed {
+          background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+          color: white;
+          border-color: #28a745;
+          animation: pulse 2s ease-in-out 3;
+        }
+        
+        .challenge-indicator.active {
+          animation: glow 3s ease-in-out infinite;
         }
         
         .back-btn {
@@ -1312,6 +1728,31 @@ export default function Home() {
           box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         
+        .stats-btn {
+          position: ${isMobile ? 'static' : 'absolute'};
+          bottom: ${isMobile ? 'auto' : '20px'};
+          left: ${isMobile ? 'auto' : '20px'};
+          align-self: ${isMobile ? 'flex-start' : 'auto'};
+          margin-bottom: ${isMobile ? '16px' : '0'};
+          background: rgba(255, 255, 255, 0.9);
+          border: 2px solid #F7931E;
+          color: #FF6B35;
+          padding: 8px 16px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
+          z-index: 10;
+          transition: all 0.3s ease;
+          font-size: ${isMobile ? '14px' : '16px'};
+        }
+        
+        .stats-btn:hover {
+          background: #FF6B35;
+          color: white;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
         .card-container {
           display: flex;
           justify-content: center;
@@ -1322,11 +1763,7 @@ export default function Home() {
         }
         
         .bingo-card {
-          background: white;
           padding: ${isMobile ? '12px' : isTablet ? '20px' : '28px'};
-          border-radius: 12px;
-          border: 3px solid #FFD23F;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.2);
           position: relative;
         }
         
@@ -1342,17 +1779,7 @@ export default function Home() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
-          color: white;
           font-size: ${isMobile ? '2.2rem' : isTablet ? '2.8rem' : '3.5rem'};
-          font-weight: 900;
-          font-family: "Inter", sans-serif;
-          border-radius: 12px 12px 0 0;
-          border: 3px solid #FF6B35;
-          border-bottom: none;
-          text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-          box-shadow: inset 0 2px 10px rgba(255,255,255,0.3);
-          letter-spacing: 0.05em;
         }
         
         .bingo-grid {
@@ -1366,45 +1793,20 @@ export default function Home() {
         }
         
         .grid-cell {
-          border: 2px solid #FFD23F;
-          border-radius: 8px;
           height: ${cellSize}px;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(145deg, #ffffff 0%, #fff8e1 100%);
           cursor: pointer;
-          position: relative;
-          overflow: hidden;
-          transition: all 0.3s ease;
           -webkit-tap-highlight-color: transparent;
-        }
-        
-        .grid-cell:hover {
-          background: linear-gradient(145deg, #FFE082 0%, #FFF3C4 100%);
-          transform: scale(0.98);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-          border-color: #F7931E;
         }
         
         .grid-cell:active {
           transform: scale(0.95);
         }
         
-        .grid-cell.selected {
-          background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
-          color: white;
-          box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
-        }
-        
         .grid-cell.free {
-          background: linear-gradient(135deg, #FF6B35 0%, #F7931E 50%, #FFD23F 100%);
           cursor: default;
-        }
-        
-        .grid-cell.free:hover {
-          background: linear-gradient(135deg, #FF6B35 0%, #F7931E 50%, #FFD23F 100%);
-          transform: scale(1.02);
         }
         
         .free-icon {
@@ -1472,17 +1874,7 @@ export default function Home() {
         }
         
         .grid-cell.free .cell-text {
-          font-family: "Inter", sans-serif;
-          font-weight: 900;
           font-size: ${isMobile ? '1rem' : isTablet ? '1.2rem' : '1.5rem'};
-          color: white;
-          text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-          letter-spacing: 0.05em;
-        }
-        
-        .grid-cell.selected .cell-text {
-          color: white;
-          text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
         
         .dialog-overlay {
@@ -1691,6 +2083,126 @@ export default function Home() {
           animation: slideUp 0.3s ease-out;
         }
         
+        .challenge-notification {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+          border-radius: 16px;
+          padding: 20px;
+          box-shadow: 0 8px 24px rgba(40, 167, 69, 0.4);
+          z-index: 1002;
+          animation: challengeBounce 0.6s ease-out;
+          cursor: pointer;
+          max-width: 300px;
+          width: 90%;
+        }
+        
+        .challenge-notification-content {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          color: white;
+        }
+        
+        .challenge-icon {
+          font-size: 3rem;
+          animation: spin 2s ease-in-out;
+        }
+        
+        .challenge-text {
+          flex: 1;
+        }
+        
+        .challenge-title {
+          font-size: 1.2rem;
+          font-weight: 800;
+          margin-bottom: 4px;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .challenge-message {
+          font-size: 0.9rem;
+          opacity: 0.9;
+          margin-bottom: 6px;
+        }
+        
+        .challenge-reward {
+          font-size: 1rem;
+          font-weight: 700;
+          background: rgba(255, 255, 255, 0.2);
+          padding: 4px 8px;
+          border-radius: 12px;
+          display: inline-block;
+        }
+        
+        .achievement-notification {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+          border-radius: 16px;
+          padding: 20px;
+          box-shadow: 0 8px 24px rgba(111, 66, 193, 0.4);
+          z-index: 1003;
+          animation: achievementBounce 0.8s ease-out;
+          cursor: pointer;
+          max-width: 320px;
+          width: 90%;
+          border: 3px solid #ffd700;
+        }
+        
+        .achievement-notification-content {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          color: white;
+        }
+        
+        .achievement-icon {
+          font-size: 3rem;
+          animation: glow 2s ease-in-out infinite;
+        }
+        
+        .achievement-text {
+          flex: 1;
+        }
+        
+        .achievement-title {
+          font-size: 1rem;
+          font-weight: 800;
+          margin-bottom: 4px;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+          color: #ffd700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
+        .achievement-name {
+          font-size: 1.2rem;
+          font-weight: 700;
+          margin-bottom: 4px;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .achievement-description {
+          font-size: 0.9rem;
+          opacity: 0.9;
+          margin-bottom: 6px;
+        }
+        
+        .achievement-points {
+          font-size: 1rem;
+          font-weight: 700;
+          background: rgba(255, 215, 0, 0.3);
+          padding: 4px 8px;
+          border-radius: 12px;
+          display: inline-block;
+          border: 1px solid #ffd700;
+        }
+        
         @keyframes bounce {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-3px); }
@@ -1709,6 +2221,50 @@ export default function Home() {
         @keyframes slideUp {
           from { transform: translate(-50%, 100%); opacity: 0; }
           to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        
+        @keyframes glow {
+          0%, 100% { 
+            box-shadow: 0 2px 8px rgba(255, 211, 63, 0.3);
+          }
+          50% { 
+            box-shadow: 0 4px 16px rgba(255, 211, 63, 0.6);
+          }
+        }
+        
+        @keyframes challengeBounce {
+          0% { 
+            transform: translate(-50%, -50%) scale(0.3);
+            opacity: 0;
+          }
+          50% { 
+            transform: translate(-50%, -50%) scale(1.1);
+            opacity: 1;
+          }
+          100% { 
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes achievementBounce {
+          0% { 
+            transform: translate(-50%, -50%) scale(0.3) rotate(-10deg);
+            opacity: 0;
+          }
+          50% { 
+            transform: translate(-50%, -50%) scale(1.2) rotate(5deg);
+            opacity: 1;
+          }
+          100% { 
+            transform: translate(-50%, -50%) scale(1) rotate(0deg);
+            opacity: 1;
+          }
         }
         
         .players-dialog {
@@ -1947,6 +2503,166 @@ export default function Home() {
           background: linear-gradient(135deg, #F7931E 0%, #FF6B35 100%);
           transform: translateY(-1px);
           box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
+        }
+        
+        .challenge-modal {
+          max-width: 600px;
+          max-height: 85vh;
+        }
+        
+        .challenge-details {
+          line-height: 1.6;
+          color: #333;
+        }
+        
+        .challenge-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid rgba(255, 211, 63, 0.3);
+        }
+        
+        .challenge-name {
+          color: #FF6B35;
+          font-family: "Inter", sans-serif;
+          font-weight: 700;
+          font-size: 1.4rem;
+          margin: 0;
+        }
+        
+        .difficulty-badge {
+          padding: 4px 12px;
+          border-radius: 15px;
+          font-size: 0.8rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
+        .difficulty-easy {
+          background: #d4edda;
+          color: #155724;
+          border: 1px solid #c3e6cb;
+        }
+        
+        .difficulty-medium {
+          background: #fff3cd;
+          color: #856404;
+          border: 1px solid #ffeaa7;
+        }
+        
+        .difficulty-hard {
+          background: #f8d7da;
+          color: #721c24;
+          border: 1px solid #f5c6cb;
+        }
+        
+        .challenge-description {
+          margin-bottom: 20px;
+        }
+        
+        .challenge-description p {
+          font-size: 1.1rem;
+          color: #555;
+          margin: 0;
+        }
+        
+        .challenge-reward-info {
+          margin-bottom: 20px;
+        }
+        
+        .reward-box {
+          background: rgba(255, 211, 63, 0.15);
+          border: 2px solid #FFD23F;
+          border-radius: 12px;
+          padding: 16px;
+          text-align: center;
+        }
+        
+        .reward-label {
+          font-size: 0.9rem;
+          color: #666;
+          margin-bottom: 4px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          font-weight: 600;
+        }
+        
+        .reward-amount {
+          font-size: 1.3rem;
+          font-weight: 800;
+          color: #FF6B35;
+          font-family: "Inter", sans-serif;
+        }
+        
+        .challenge-status-box {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 16px;
+          border-radius: 12px;
+          margin-bottom: 20px;
+        }
+        
+        .challenge-status-box.completed {
+          background: rgba(40, 167, 69, 0.1);
+          border: 2px solid #28a745;
+        }
+        
+        .challenge-status-box.active {
+          background: rgba(255, 193, 7, 0.1);
+          border: 2px solid #FFC107;
+        }
+        
+        .status-icon {
+          font-size: 1.5rem;
+        }
+        
+        .status-title {
+          font-weight: 700;
+          font-size: 1rem;
+          margin-bottom: 4px;
+        }
+        
+        .status-message {
+          font-size: 0.9rem;
+          color: #666;
+        }
+        
+        .challenge-status-box.completed .status-title {
+          color: #28a745;
+        }
+        
+        .challenge-status-box.active .status-title {
+          color: #856404;
+        }
+        
+        .challenge-tips {
+          background: rgba(255, 248, 225, 0.8);
+          border-radius: 8px;
+          padding: 16px;
+          border: 1px solid rgba(255, 211, 63, 0.3);
+        }
+        
+        .challenge-tips h4 {
+          color: #FF6B35;
+          margin: 0 0 12px 0;
+          font-size: 1rem;
+          font-family: "Inter", sans-serif;
+          font-weight: 700;
+        }
+        
+        .challenge-tips ul {
+          margin: 0;
+          padding-left: 20px;
+          color: #555;
+        }
+        
+        .challenge-tips li {
+          margin-bottom: 6px;
+          font-size: 0.9rem;
         }
         
         .stop-game-warning {

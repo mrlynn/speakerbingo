@@ -1,4 +1,5 @@
-/* Sunrise Semester Theme Variables */
+/* Sunrise Semester Theme - Peaceful, Warm, Inviting */
+
 :root {
   /* Sunrise Color Palette */
   --sunrise-rust: #8B4513;
@@ -27,85 +28,13 @@
   --glow-sunrise: 0 0 30px rgba(255, 112, 67, 0.4);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html,
+/* Background with Sunrise Scene */
 body {
-  max-width: 100vw;
-  overflow-x: hidden;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-}
-
-body {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  min-height: 100vh;
   background: var(--gradient-sky);
   position: relative;
   overflow-x: hidden;
 }
 
-/* Sunrise animated background */
-@keyframes sunriseGlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.sunrise-bg {
-  background: linear-gradient(135deg, #FF6B35, #F7931E, #FFD23F, #FF9500);
-  background-size: 300% 300%;
-  animation: sunriseGlow 8s ease infinite;
-}
-
-/* Prevent text selection on bingo cells */
-.bingo-cell {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-/* Improve touch responsiveness */
-* {
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #FFF8E1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #FF6B35, #FFD23F);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #FF9500, #F7931E);
-}
-
-/* Sunrise glow effect */
-.sunrise-glow {
-  box-shadow: 0 0 30px rgba(255, 210, 63, 0.3);
-}
-
-/* Ensure the app looks good on all screen sizes */
-@media (max-width: 600px) {
-  html {
-    font-size: 14px;
-  }
-}
-
-/* Sunrise Scene Background Elements */
 body::before {
   content: '';
   position: fixed;
@@ -231,24 +160,7 @@ body::before {
   to { left: 100%; }
 }
 
-/* Water Wave Animation */
-.water-wave {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 100px;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path fill="%234DD0E1" fill-opacity="0.3" d="M0,40 C150,80 350,0 600,40 C850,80 1050,0 1200,40 L1200,120 L0,120 Z"></path></svg>');
-  animation: wave 10s linear infinite;
-  z-index: -1;
-}
-
-@keyframes wave {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-/* Sunrise Theme Component Styles */
+/* Main Title Styling */
 .sunrise-title {
   font-family: "Inter", sans-serif;
   font-weight: 900;
@@ -260,6 +172,15 @@ body::before {
   margin-bottom: 8px;
 }
 
+.sunrise-subtitle {
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  color: var(--sunrise-navy);
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.05em;
+}
+
+/* Bingo Card Container */
 .sunrise-bingo-card {
   background: rgba(255, 248, 225, 0.95);
   backdrop-filter: blur(10px);
@@ -271,6 +192,7 @@ body::before {
   border: 2px solid rgba(255, 209, 128, 0.5);
 }
 
+/* BINGO Header Letters */
 .sunrise-header-cell {
   background: var(--gradient-sunrise);
   color: var(--sunrise-rust);
@@ -285,6 +207,24 @@ body::before {
   overflow: hidden;
 }
 
+.sunrise-header-cell::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: headerShine 8s ease-in-out infinite;
+}
+
+@keyframes headerShine {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+
+/* Grid Cells */
 .sunrise-grid-cell {
   background: var(--gradient-cream);
   color: var(--sunrise-navy);
@@ -294,6 +234,21 @@ body::before {
   overflow: hidden;
   transition: all 0.3s ease;
   font-weight: 600;
+}
+
+/* Cloud Pattern Overlay */
+.sunrise-grid-cell::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .sunrise-grid-cell:hover {
@@ -321,6 +276,7 @@ body::before {
   }
 }
 
+/* FREE Space Special Styling */
 .sunrise-grid-cell.free {
   background: radial-gradient(circle, var(--sunrise-gold) 0%, var(--sunrise-coral) 100%);
   color: white;
@@ -338,6 +294,7 @@ body::before {
   }
 }
 
+/* Point Value Indicators */
 .sunrise-point-value {
   background: rgba(255, 255, 255, 0.9);
   color: var(--sunrise-coral);
@@ -348,6 +305,7 @@ body::before {
   font-weight: 700;
 }
 
+/* Buttons */
 .sunrise-button {
   background: var(--gradient-sunrise);
   color: var(--sunrise-rust);
@@ -366,6 +324,7 @@ body::before {
   background: linear-gradient(135deg, #FF7043 0%, #FFD180 100%);
 }
 
+/* Dialogs */
 .sunrise-dialog {
   background: rgba(255, 248, 225, 0.98);
   border: 3px solid var(--sunrise-gold);
@@ -375,4 +334,108 @@ body::before {
 .sunrise-dialog-title {
   color: var(--sunrise-rust);
   text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Peaceful Animations */
+.water-wave {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path fill="%234DD0E1" fill-opacity="0.3" d="M0,40 C150,80 350,0 600,40 C850,80 1050,0 1200,40 L1200,120 L0,120 Z"></path></svg>');
+  animation: wave 10s linear infinite;
+  z-index: -1;
+}
+
+@keyframes wave {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Mindful Breathing Animation */
+.breathe-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--sunrise-gold) 0%, transparent 70%);
+  animation: breathe 4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.2); opacity: 0.6; }
+}
+
+/* Achievement Notifications with Sunrise Theme */
+.sunrise-achievement {
+  background: linear-gradient(135deg, var(--sunrise-coral) 0%, var(--sunrise-gold) 100%);
+  border: 3px solid white;
+  color: var(--sunrise-navy);
+  box-shadow: 0 8px 24px rgba(255, 112, 67, 0.3);
+}
+
+/* Inspirational Quote Styling */
+.daily-light {
+  background: rgba(255, 248, 225, 0.9);
+  border: 2px solid var(--sunrise-gold);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  text-align: center;
+  color: var(--sunrise-navy);
+  font-style: italic;
+  font-weight: 500;
+  box-shadow: var(--shadow-soft);
+}
+
+/* Shared Wins Animation */
+.shared-win-burst {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.win-burst-ray {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 100px;
+  background: linear-gradient(to bottom, transparent, var(--sunrise-gold), transparent);
+  transform-origin: center bottom;
+  animation: burstRay 1s ease-out forwards;
+}
+
+@keyframes burstRay {
+  0% { 
+    transform: translate(-50%, -50%) rotate(var(--rotation)) scale(0);
+    opacity: 1;
+  }
+  100% { 
+    transform: translate(-50%, -50%) rotate(var(--rotation)) scale(2);
+    opacity: 0;
+  }
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 768px) {
+  .sun-decoration {
+    width: 100px;
+    height: 100px;
+    bottom: 15%;
+  }
+  
+  .sunrise-header-cell {
+    font-size: 1.8rem;
+  }
+  
+  .sunrise-grid-cell {
+    font-size: 0.7rem;
+  }
 }
