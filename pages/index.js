@@ -478,7 +478,17 @@ export default function Home() {
   }
 
   const getCellSize = () => {
-    if (isMobile) return 64
+    if (isMobile) {
+      // Calculate based on available viewport width
+      const viewportWidth = window?.innerWidth || 375
+      const padding = 32 // Card padding (16px × 2)
+      const gridPadding = 16 // Grid padding (8px × 2)
+      const gaps = 16 // 4 gaps × 4px
+      const availableWidth = viewportWidth - padding - gridPadding - gaps
+      const cellSize = Math.floor(availableWidth / 5)
+      // Ensure minimum usable size but not too large
+      return Math.max(58, Math.min(cellSize, 75))
+    }
     if (isTablet) return 85
     return 110
   }
@@ -1584,13 +1594,26 @@ export default function Home() {
           justify-content: center;
           width: 100%;
           max-width: ${isMobile ? '100vw' : 'auto'};
-          padding: ${isMobile ? '8px' : '0'};
+          padding: ${isMobile ? '12px 16px' : '0'};
           overflow-x: auto;
+          /* Better mobile scrolling */
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        
+        .card-container::-webkit-scrollbar {
+          display: none;
         }
         
         .bingo-card {
-          padding: ${isMobile ? '12px' : isTablet ? '20px' : '28px'};
+          padding: ${isMobile ? '16px' : isTablet ? '20px' : '28px'};
           position: relative;
+          /* Ensure card doesn't overflow on mobile */
+          max-width: ${isMobile ? 'calc(100vw - 32px)' : 'none'};
+          margin: ${isMobile ? '0 auto' : '0'};
+          /* Better mobile rendering */
+          box-sizing: border-box;
         }
         
         .bingo-header {
@@ -1611,11 +1634,14 @@ export default function Home() {
         .bingo-grid {
           display: grid;
           grid-template-columns: repeat(5, ${cellSize}px);
-          gap: 4px;
+          gap: ${isMobile ? '6px' : '4px'};
           border: 3px solid #FF6B35;
           border-radius: 0 0 12px 12px;
           background: #FFF8E1;
-          padding: 8px;
+          padding: ${isMobile ? '12px' : '8px'};
+          /* Ensure no horizontal overflow on mobile */
+          max-width: 100%;
+          box-sizing: border-box;
         }
         
         .grid-cell {
@@ -1625,10 +1651,30 @@ export default function Home() {
           justify-content: center;
           cursor: pointer;
           -webkit-tap-highlight-color: transparent;
+          /* Improved touch targets for mobile */
+          min-height: ${isMobile ? '58px' : cellSize + 'px'};
+          touch-action: manipulation;
+          position: relative;
+          /* Better mobile interaction feedback */
+          transition: all 0.15s ease;
         }
         
         .grid-cell:active {
           transform: scale(0.95);
+          /* Enhanced mobile feedback */
+          background-color: ${isMobile ? 'rgba(255, 107, 53, 0.1)' : 'transparent'};
+        }
+        
+        /* Improve touch responsiveness on mobile */
+        @media (max-width: 768px) {
+          .grid-cell:hover {
+            background-color: rgba(255, 107, 53, 0.05);
+          }
+          
+          .grid-cell:active {
+            background-color: rgba(255, 107, 53, 0.15);
+            transform: scale(0.92);
+          }
         }
         
         .grid-cell.free {
@@ -1662,12 +1708,16 @@ export default function Home() {
         
         .cell-text {
           font-weight: 600;
-          font-size: ${isMobile ? '0.55rem' : isTablet ? '0.65rem' : '0.75rem'};
-          line-height: 1.1;
+          font-size: ${isMobile ? '0.7rem' : isTablet ? '0.75rem' : '0.85rem'};
+          line-height: ${isMobile ? '1.2' : '1.15'};
           text-align: center;
           word-break: break-word;
           hyphens: auto;
-          margin-bottom: 2px;
+          margin-bottom: ${isMobile ? '4px' : '3px'};
+          padding: ${isMobile ? '2px 3px' : '0 2px'};
+          /* Better mobile text rendering */
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
         }
         
         .cell-info {
@@ -1679,23 +1729,29 @@ export default function Home() {
         }
         
         .point-value {
-          background: rgba(255, 255, 255, 0.9);
+          background: rgba(255, 255, 255, 0.95);
           color: #FF6B35;
-          font-size: ${isMobile ? '0.6rem' : '0.7rem'};
+          font-size: ${isMobile ? '0.65rem' : '0.75rem'};
           font-weight: 700;
-          padding: 1px 4px;
+          padding: ${isMobile ? '3px 6px' : '2px 5px'};
           border-radius: 8px;
           box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+          border: 1px solid rgba(255, 107, 53, 0.2);
+          /* Better mobile touch targets */
+          min-height: ${isMobile ? '20px' : 'auto'};
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         
         .click-count {
           background: #F7931E;
           color: white;
-          font-size: ${isMobile ? '0.5rem' : '0.6rem'};
+          font-size: ${isMobile ? '0.6rem' : '0.65rem'};
           font-weight: 600;
-          padding: 1px 3px;
+          padding: 2px 4px;
           border-radius: 6px;
-          min-width: 16px;
+          min-width: 18px;
           text-align: center;
         }
         
