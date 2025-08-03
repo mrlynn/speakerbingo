@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react'
 import GameLobby from '../components/GameLobby'
 import MessageBanner from '../components/MessageBanner'
 import PlayerStatsModal from '../components/PlayerStatsModal'
+import GlobalLeaderboard from '../components/GlobalLeaderboard'
+import FABMenu from '../components/FABMenu'
 import { PHRASE_CATEGORIES, getRandomPhrasesFromCategory } from '../lib/phrases'
 import { getTodaysChallenge, checkChallengeCompletion, getChallengeProgressMessage } from '../lib/dailyChallenges'
 import { 
@@ -85,6 +87,9 @@ export default function Home() {
   const [newAchievements, setNewAchievements] = useState([])
   const [achievementNotification, setAchievementNotification] = useState(null)
   const [statsModalOpen, setStatsModalOpen] = useState(false)
+  
+  // Global leaderboard state
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false)
   
   // Simple responsive detection using window width
   const [isMobile, setIsMobile] = useState(false)
@@ -604,6 +609,7 @@ export default function Home() {
           isMobile={isMobile}
           onAbout={() => setAboutDialogOpen(true)}
           onInstructions={() => setInstructionsOpen(true)}
+          onLeaderboard={() => setLeaderboardOpen(true)}
         />
         
         {error && (
@@ -858,12 +864,13 @@ export default function Home() {
 
   return (
     <div className="game-container">
-      {/* Sunrise Scene Background Elements */}
+      {/* Ghibli-Style Sunrise Scene Background Elements */}
       <div className="sun-decoration"></div>
       <div className="sun-reflection"></div>
       <div className="cloud cloud1"></div>
       <div className="cloud cloud2"></div>
       <div className="water-wave"></div>
+      <div className="ghibli-particles"></div>
         
         <h1 className="title sunrise-title">
           Sunrise Semester Speaker Bingo
@@ -881,34 +888,12 @@ export default function Home() {
         <div className="multiplayer-info">
           <div className="room-info">
             <span className="room-code">🏠 Room: {roomCode}</span>
-            <button
-              className="share-btn"
-              onClick={() => setShareDialogOpen(true)}
-              title="Share game with friends"
-            >
-              📤
-            </button>
-            <button
-              className="players-btn"
-              onClick={() => setPlayersViewOpen(true)}
-              title="View other players' boards"
-            >
-              👥
-            </button>
-            {/* Stop Game button - only visible to host */}
-            {gameState?.players?.find(p => p.id === playerId)?.isHost && gameState?.status !== 'finished' && (
-              <button
-                className="stop-game-btn"
-                onClick={() => setStopGameDialogOpen(true)}
-                title="End game and declare winner by highest points"
-              >
-                🛑
-              </button>
-            )}
+            <span className="player-count">👥 {gameState?.players?.length || 1} player{(gameState?.players?.length || 1) !== 1 ? 's' : ''}</span>
           </div>
-          <span className="player-count">👥 Players: {gameState?.players?.length || 1}</span>
           {gameState?.status === 'waiting' && (
-            <span className="waiting">⏳ Waiting for players...</span>
+            <div className="waiting-status">
+              <span className="waiting">⏳ Waiting for players to join...</span>
+            </div>
           )}
         </div>
       )}
@@ -960,10 +945,10 @@ export default function Home() {
         </div>
       )}
       
-      {/* Back to menu button */}
-      <button
-        className="back-btn sunrise-button"
-        onClick={() => {
+      {/* FAB Menu - replaces all scattered buttons */}
+      <FABMenu
+        isMobile={isMobile}
+        onBackToMenu={() => {
           setGameMode('menu')
           setGrid([])
           setSelected([])
@@ -974,38 +959,17 @@ export default function Home() {
           setPlayerId(null)
           setMode(null)
         }}
-      >
-        🏠 Back to Menu
-      </button>
-      
-      {/* About button */}
-      <button
-        className="about-btn sunrise-button"
-        onClick={() => setAboutDialogOpen(true)}
-        title="Learn about the game's origin"
-      >
-        ℹ️ About
-      </button>
-      
-      {/* Instructions button */}
-      <button
-        className="instructions-btn sunrise-button"
-        onClick={() => setInstructionsOpen(true)}
-        title="How to play"
-      >
-        📖 How to Play
-      </button>
-      
-      {/* Stats button */}
-      {playerProfile && (
-        <button
-          className="stats-btn sunrise-button"
-          onClick={() => setStatsModalOpen(true)}
-          title="View your statistics and achievements"
-        >
-          📊 Stats
-        </button>
-      )}
+        onShareGame={() => setShareDialogOpen(true)}
+        onViewPlayers={() => setPlayersViewOpen(true)}
+        onLeaderboard={() => setLeaderboardOpen(true)}
+        onStats={() => setStatsModalOpen(true)}
+        onInstructions={() => setInstructionsOpen(true)}
+        onAbout={() => setAboutDialogOpen(true)}
+        onStopGame={() => setStopGameDialogOpen(true)}
+        showShareAndPlayers={isMultiplayer}
+        showStopGame={isMultiplayer && gameState?.players?.find(p => p.id === playerId)?.isHost && gameState?.status !== 'finished'}
+        showStats={!!playerProfile}
+      />
       
       {/* Bingo Card */}
       <div className="card-container">
@@ -1449,6 +1413,13 @@ export default function Home() {
           isMobile={isMobile}
         />
       )}
+      
+      {/* Global Leaderboard Modal */}
+      <GlobalLeaderboard
+        isOpen={leaderboardOpen}
+        onClose={() => setLeaderboardOpen(false)}
+        isMobile={isMobile}
+      />
 
       {/* Challenge Completion Notification */}
       {challengeCompletionNotification && (
@@ -1484,15 +1455,17 @@ export default function Home() {
         .multiplayer-info {
           margin-bottom: 16px;
           display: flex;
-          gap: 16px;
-          flex-wrap: wrap;
-          justify-content: center;
+          flex-direction: column;
+          gap: 12px;
+          align-items: center;
         }
         
         .room-info {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 16px;
+          flex-wrap: wrap;
+          justify-content: center;
         }
         
         .room-code {
@@ -1504,37 +1477,8 @@ export default function Home() {
           box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
         
-        .share-btn, .players-btn, .stop-game-btn {
-          background: white;
-          border: 2px solid #FFD23F;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 18px;
-          transition: all 0.3s ease;
-        }
-        
-        .share-btn:hover, .players-btn:hover, .stop-game-btn:hover {
-          transform: scale(1.1);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        
-        .players-btn {
-          border-color: #F7931E;
-        }
-        
-        .stop-game-btn {
-          border-color: #dc3545;
-          color: #dc3545;
-        }
-        
-        .stop-game-btn:hover {
-          background: rgba(220, 53, 69, 0.1);
-          border-color: #c82333;
+        .waiting-status {
+          text-align: center;
         }
         
         .player-count, .waiting {
@@ -1653,105 +1597,6 @@ export default function Home() {
           animation: glow 3s ease-in-out infinite;
         }
         
-        .back-btn {
-          position: ${isMobile ? 'static' : 'absolute'};
-          top: ${isMobile ? 'auto' : '20px'};
-          left: ${isMobile ? 'auto' : '20px'};
-          align-self: ${isMobile ? 'flex-start' : 'auto'};
-          margin-bottom: ${isMobile ? '16px' : '0'};
-          background: rgba(255, 255, 255, 0.9);
-          border: 2px solid #F7931E;
-          color: #FF6B35;
-          padding: 8px 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 600;
-          z-index: 10;
-          transition: all 0.3s ease;
-          font-size: ${isMobile ? '14px' : '16px'};
-        }
-        
-        .back-btn:hover {
-          background: #FF6B35;
-          color: white;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        
-        .about-btn {
-          position: ${isMobile ? 'static' : 'absolute'};
-          top: ${isMobile ? 'auto' : '20px'};
-          right: ${isMobile ? 'auto' : '20px'};
-          align-self: ${isMobile ? 'flex-end' : 'auto'};
-          margin-bottom: ${isMobile ? '16px' : '0'};
-          background: rgba(255, 255, 255, 0.9);
-          border: 2px solid #F7931E;
-          color: #FF6B35;
-          padding: 8px 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 600;
-          z-index: 10;
-          transition: all 0.3s ease;
-          font-size: ${isMobile ? '14px' : '16px'};
-        }
-        
-        .about-btn:hover {
-          background: #FF6B35;
-          color: white;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        
-        .instructions-btn {
-          position: ${isMobile ? 'static' : 'absolute'};
-          bottom: ${isMobile ? 'auto' : '20px'};
-          right: ${isMobile ? 'auto' : '20px'};
-          align-self: ${isMobile ? 'flex-end' : 'auto'};
-          margin-bottom: ${isMobile ? '16px' : '0'};
-          background: rgba(255, 255, 255, 0.9);
-          border: 2px solid #F7931E;
-          color: #FF6B35;
-          padding: 8px 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 600;
-          z-index: 10;
-          transition: all 0.3s ease;
-          font-size: ${isMobile ? '14px' : '16px'};
-        }
-        
-        .instructions-btn:hover {
-          background: #FF6B35;
-          color: white;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        
-        .stats-btn {
-          position: ${isMobile ? 'static' : 'absolute'};
-          bottom: ${isMobile ? 'auto' : '20px'};
-          left: ${isMobile ? 'auto' : '20px'};
-          align-self: ${isMobile ? 'flex-start' : 'auto'};
-          margin-bottom: ${isMobile ? '16px' : '0'};
-          background: rgba(255, 255, 255, 0.9);
-          border: 2px solid #F7931E;
-          color: #FF6B35;
-          padding: 8px 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 600;
-          z-index: 10;
-          transition: all 0.3s ease;
-          font-size: ${isMobile ? '14px' : '16px'};
-        }
-        
-        .stats-btn:hover {
-          background: #FF6B35;
-          color: white;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
         
         .card-container {
           display: flex;

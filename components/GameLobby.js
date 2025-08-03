@@ -14,7 +14,8 @@ export default function GameLobby({
   onJoinGame,
   isMobile,
   onAbout,
-  onInstructions
+  onInstructions,
+  onLeaderboard
 }) {
   return (
     <div className="lobby-container">
@@ -152,6 +153,13 @@ export default function GameLobby({
           title="Learn about the game's origin"
         >
           ℹ️ About this game
+        </button>
+        <button
+          className="leaderboard-btn-lobby"
+          onClick={onLeaderboard}
+          title="View global leaderboard"
+        >
+          🏆 Leaderboard
         </button>
       </div>
       
@@ -431,7 +439,7 @@ export default function GameLobby({
           flex-wrap: wrap;
         }
         
-        .about-btn-lobby, .instructions-btn-lobby {
+        .about-btn-lobby, .instructions-btn-lobby, .leaderboard-btn-lobby {
           background: rgba(255, 255, 255, 0.2);
           border: 2px solid rgba(255, 255, 255, 0.3);
           color: white;
@@ -444,7 +452,7 @@ export default function GameLobby({
           backdrop-filter: blur(10px);
         }
         
-        .about-btn-lobby:hover, .instructions-btn-lobby:hover {
+        .about-btn-lobby:hover, .instructions-btn-lobby:hover, .leaderboard-btn-lobby:hover {
           background: rgba(255, 255, 255, 0.3);
           border-color: rgba(255, 255, 255, 0.5);
           transform: translateY(-1px);
