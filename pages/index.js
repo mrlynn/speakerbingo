@@ -479,15 +479,8 @@ export default function Home() {
 
   const getCellSize = () => {
     if (isMobile) {
-      // Calculate based on available viewport width
-      const viewportWidth = window?.innerWidth || 375
-      const padding = 32 // Card padding (16px × 2)
-      const gridPadding = 16 // Grid padding (8px × 2)
-      const gaps = 16 // 4 gaps × 4px
-      const availableWidth = viewportWidth - padding - gridPadding - gaps
-      const cellSize = Math.floor(availableWidth / 5)
-      // Ensure minimum usable size but not too large
-      return Math.max(58, Math.min(cellSize, 75))
+      // Use CSS calc() for truly responsive sizing - will be handled in CSS
+      return 'calc((100vw - 60px) / 5.5)' // vw based with safety margin
     }
     if (isTablet) return 85
     return 110
@@ -1594,8 +1587,8 @@ export default function Home() {
           justify-content: center;
           width: 100%;
           max-width: ${isMobile ? '100vw' : 'auto'};
-          padding: ${isMobile ? '12px 16px' : '0'};
-          overflow-x: auto;
+          padding: ${isMobile ? '0 8px' : '0'};
+          overflow: ${isMobile ? 'visible' : 'auto'};
           /* Better mobile scrolling */
           -webkit-overflow-scrolling: touch;
           scrollbar-width: none;
@@ -1607,56 +1600,63 @@ export default function Home() {
         }
         
         .bingo-card {
-          padding: ${isMobile ? '16px' : isTablet ? '20px' : '28px'};
+          padding: ${isMobile ? '8px' : isTablet ? '20px' : '28px'};
           position: relative;
           /* Ensure card doesn't overflow on mobile */
-          max-width: ${isMobile ? 'calc(100vw - 32px)' : 'none'};
-          margin: ${isMobile ? '0 auto' : '0'};
+          max-width: ${isMobile ? '100%' : 'none'};
+          width: ${isMobile ? '100%' : 'auto'};
+          margin: ${isMobile ? '0' : '0'};
           /* Better mobile rendering */
           box-sizing: border-box;
         }
         
         .bingo-header {
           display: grid;
-          grid-template-columns: repeat(5, ${cellSize}px);
-          gap: 4px;
+          grid-template-columns: ${isMobile ? 'repeat(5, 1fr)' : `repeat(5, ${cellSize}px)`};
+          gap: ${isMobile ? '2px' : '4px'};
           margin-bottom: 8px;
+          width: ${isMobile ? '100%' : 'fit-content'};
         }
         
         .header-cell {
-          height: ${isMobile ? '50px' : isTablet ? '60px' : '75px'};
+          height: ${isMobile ? '40px' : isTablet ? '60px' : '75px'};
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: ${isMobile ? '2.2rem' : isTablet ? '2.8rem' : '3.5rem'};
+          font-size: ${isMobile ? '1.5rem' : isTablet ? '2.8rem' : '3.5rem'};
+          aspect-ratio: ${isMobile ? '1' : 'auto'};
         }
         
         .bingo-grid {
           display: grid;
-          grid-template-columns: repeat(5, ${cellSize}px);
-          gap: ${isMobile ? '6px' : '4px'};
+          grid-template-columns: ${isMobile ? 'repeat(5, 1fr)' : `repeat(5, ${cellSize}px)`};
+          gap: ${isMobile ? '2px' : '4px'};
           border: 3px solid #FF6B35;
           border-radius: 0 0 12px 12px;
           background: #FFF8E1;
-          padding: ${isMobile ? '12px' : '8px'};
+          padding: ${isMobile ? '6px' : '8px'};
           /* Ensure no horizontal overflow on mobile */
           max-width: 100%;
           box-sizing: border-box;
+          width: ${isMobile ? '100%' : 'fit-content'};
         }
         
         .grid-cell {
-          height: ${cellSize}px;
+          height: ${isMobile ? 'auto' : cellSize + 'px'};
+          aspect-ratio: ${isMobile ? '1' : 'auto'};
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           -webkit-tap-highlight-color: transparent;
           /* Improved touch targets for mobile */
-          min-height: ${isMobile ? '58px' : cellSize + 'px'};
+          min-height: ${isMobile ? '50px' : cellSize + 'px'};
           touch-action: manipulation;
           position: relative;
           /* Better mobile interaction feedback */
           transition: all 0.15s ease;
+          /* Ensure cells are square on mobile */
+          ${isMobile ? 'width: 100%;' : ''}
         }
         
         .grid-cell:active {
@@ -1708,16 +1708,23 @@ export default function Home() {
         
         .cell-text {
           font-weight: 600;
-          font-size: ${isMobile ? '0.7rem' : isTablet ? '0.75rem' : '0.85rem'};
-          line-height: ${isMobile ? '1.2' : '1.15'};
+          font-size: ${isMobile ? '0.6rem' : isTablet ? '0.75rem' : '0.85rem'};
+          line-height: ${isMobile ? '1.1' : '1.15'};
           text-align: center;
           word-break: break-word;
           hyphens: auto;
-          margin-bottom: ${isMobile ? '4px' : '3px'};
-          padding: ${isMobile ? '2px 3px' : '0 2px'};
+          margin-bottom: ${isMobile ? '2px' : '3px'};
+          padding: ${isMobile ? '1px' : '0 2px'};
           /* Better mobile text rendering */
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
+          /* Ensure text fits in smaller cells */
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: ${isMobile ? '2' : '3'};
+          -webkit-box-orient: vertical;
+          /* Make text more compact on mobile */
+          ${isMobile ? 'max-height: 24px;' : ''}
         }
         
         .cell-info {
@@ -1731,14 +1738,14 @@ export default function Home() {
         .point-value {
           background: rgba(255, 255, 255, 0.95);
           color: #FF6B35;
-          font-size: ${isMobile ? '0.65rem' : '0.75rem'};
+          font-size: ${isMobile ? '0.55rem' : '0.75rem'};
           font-weight: 700;
-          padding: ${isMobile ? '3px 6px' : '2px 5px'};
-          border-radius: 8px;
+          padding: ${isMobile ? '1px 3px' : '2px 5px'};
+          border-radius: 4px;
           box-shadow: 0 1px 3px rgba(0,0,0,0.2);
           border: 1px solid rgba(255, 107, 53, 0.2);
           /* Better mobile touch targets */
-          min-height: ${isMobile ? '20px' : 'auto'};
+          min-height: ${isMobile ? '16px' : 'auto'};
           display: flex;
           align-items: center;
           justify-content: center;
