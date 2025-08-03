@@ -15,7 +15,8 @@ export default function GameLobby({
   isMobile,
   onAbout,
   onInstructions,
-  onLeaderboard
+  onLeaderboard,
+  onTopicRoulette
 }) {
   return (
     <div className="lobby-container">
@@ -160,6 +161,13 @@ export default function GameLobby({
           title="View global leaderboard"
         >
           🏆 Leaderboard
+        </button>
+        <button
+          className="topic-roulette-btn-lobby"
+          onClick={onTopicRoulette}
+          title="Spin for a random meeting topic"
+        >
+          🎡 Topic Roulette
         </button>
       </div>
       
@@ -452,11 +460,49 @@ export default function GameLobby({
           backdrop-filter: blur(10px);
         }
         
+        .topic-roulette-btn-lobby {
+          background: linear-gradient(135deg, #9B59B6 0%, #E74C3C 50%, #F39C12 100%);
+          border: 2px solid rgba(255, 255, 255, 0.4);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 25px;
+          cursor: pointer;
+          font-weight: 700;
+          font-size: 14px;
+          transition: all 0.3s ease;
+          backdrop-filter: blur(10px);
+          box-shadow: 0 4px 16px rgba(155, 89, 182, 0.3);
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .topic-roulette-btn-lobby::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+          transition: left 0.5s ease;
+        }
+        
+        .topic-roulette-btn-lobby:hover::before {
+          left: 100%;
+        }
+        
         .about-btn-lobby:hover, .instructions-btn-lobby:hover, .leaderboard-btn-lobby:hover {
           background: rgba(255, 255, 255, 0.3);
           border-color: rgba(255, 255, 255, 0.5);
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .topic-roulette-btn-lobby:hover {
+          background: linear-gradient(135deg, #8E44AD 0%, #C0392B 50%, #E67E22 100%);
+          border-color: rgba(255, 255, 255, 0.6);
+          transform: translateY(-2px) scale(1.05);
+          box-shadow: 0 6px 20px rgba(155, 89, 182, 0.4);
         }
         
         @keyframes pulse {

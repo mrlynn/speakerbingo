@@ -4,6 +4,7 @@ import MessageBanner from '../components/MessageBanner'
 import PlayerStatsModal from '../components/PlayerStatsModal'
 import GlobalLeaderboard from '../components/GlobalLeaderboard'
 import FABMenu from '../components/FABMenu'
+import TopicRouletteModal from '../components/TopicRouletteModal'
 import { PHRASE_CATEGORIES, getRandomPhrasesFromCategory } from '../lib/phrases'
 import { getTodaysChallenge, checkChallengeCompletion, getChallengeProgressMessage } from '../lib/dailyChallenges'
 import { 
@@ -90,6 +91,9 @@ export default function Home() {
   
   // Global leaderboard state
   const [leaderboardOpen, setLeaderboardOpen] = useState(false)
+  
+  // Topic roulette state
+  const [topicRouletteOpen, setTopicRouletteOpen] = useState(false)
   
   // Simple responsive detection using window width
   const [isMobile, setIsMobile] = useState(false)
@@ -610,6 +614,7 @@ export default function Home() {
           onAbout={() => setAboutDialogOpen(true)}
           onInstructions={() => setInstructionsOpen(true)}
           onLeaderboard={() => setLeaderboardOpen(true)}
+          onTopicRoulette={() => setTopicRouletteOpen(true)}
         />
         
         {error && (
@@ -858,6 +863,19 @@ export default function Home() {
             50% { transform: translateY(-3px); }
           }
         `}</style>
+
+        {/* Shared Modals for Lobby View */}
+        <GlobalLeaderboard
+          isOpen={leaderboardOpen}
+          onClose={() => setLeaderboardOpen(false)}
+          isMobile={isMobile}
+        />
+
+        <TopicRouletteModal
+          isOpen={topicRouletteOpen}
+          onClose={() => setTopicRouletteOpen(false)}
+          isMobile={isMobile}
+        />
       </div>
     )
   }
@@ -1418,6 +1436,13 @@ export default function Home() {
       <GlobalLeaderboard
         isOpen={leaderboardOpen}
         onClose={() => setLeaderboardOpen(false)}
+        isMobile={isMobile}
+      />
+
+      {/* Topic Roulette Modal */}
+      <TopicRouletteModal
+        isOpen={topicRouletteOpen}
+        onClose={() => setTopicRouletteOpen(false)}
         isMobile={isMobile}
       />
 
