@@ -5,6 +5,7 @@ import PlayerStatsModal from '../components/PlayerStatsModal'
 import GlobalLeaderboard from '../components/GlobalLeaderboard'
 import FABMenu from '../components/FABMenu'
 import TopicRouletteModal from '../components/TopicRouletteModal'
+import GameHeader from '../components/GameHeader'
 import { PHRASE_CATEGORIES, getRandomPhrasesFromCategory } from '../lib/phrases'
 import { getTodaysChallenge, checkChallengeCompletion, getChallengeProgressMessage } from '../lib/dailyChallenges'
 import { 
@@ -894,74 +895,29 @@ export default function Home() {
           Sunrise Semester Speaker Bingo
         </h1>
       
-      {/* Message Banner */}
+      {/* Unified Game Header */}
+      <GameHeader
+        playerName={playerName}
+        playerProfile={playerProfile}
+        points={points}
+        bonusPoints={bonusPoints}
+        isMultiplayer={isMultiplayer}
+        roomCode={roomCode}
+        gameState={gameState}
+        todaysChallenge={todaysChallenge}
+        challengeCompleted={challengeCompleted}
+        challengeProgress={challengeProgress}
+        isMobile={isMobile}
+        onChallengeClick={handleChallengeClick}
+        onShareGame={() => setShareDialogOpen(true)}
+      />
+      
+      {/* Scrolling Message Banner - rotates between daily challenges and community ads */}
       <MessageBanner
         onChallengeClick={handleChallengeClick}
         onAdClick={handleAdClick}
         isMobile={isMobile}
       />
-      
-      {/* Multiplayer info */}
-      {isMultiplayer && (
-        <div className="multiplayer-info">
-          <div className="room-info">
-            <span className="room-code">🏠 Room: {roomCode}</span>
-            <span className="player-count">👥 {gameState?.players?.length || 1} player{(gameState?.players?.length || 1) !== 1 ? 's' : ''}</span>
-          </div>
-          {gameState?.status === 'waiting' && (
-            <div className="waiting-status">
-              <span className="waiting">⏳ Waiting for players to join...</span>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {/* Player list for multiplayer */}
-      {isMultiplayer && gameState && (
-        <div className="player-list">
-          Players: {gameState.players.map(p => p.name).join(', ')}
-        </div>
-      )}
-      
-      {/* Current player name and points */}
-      {(playerName || !isMultiplayer) && (
-        <div className="player-info">
-          <h2 className="player-name">
-            Player: {playerName || 'Guest'}
-            {playerProfile && (
-              <span className="player-level">
-                Level {getPlayerLevel(playerProfile.stats.totalPoints).level} - {getPlayerLevel(playerProfile.stats.totalPoints).title}
-              </span>
-            )}
-          </h2>
-          <div className="points-display">
-            🏆 {points.toLocaleString()} points
-            {bonusPoints > 0 && (
-              <span className="bonus-points">+{bonusPoints} bonus!</span>
-            )}
-          </div>
-          
-          {/* Player stats summary */}
-          {playerProfile && (
-            <div className="player-stats-summary">
-              <span className="stat-item">🎯 {playerProfile.stats.totalBingos} Bingos</span>
-              <span className="stat-item">🎮 {playerProfile.stats.totalGames} Games</span>
-              {playerProfile.stats.currentStreak > 1 && (
-                <span className="stat-item">🔥 {playerProfile.stats.currentStreak} Day Streak</span>
-              )}
-            </div>
-          )}
-          
-          {/* Challenge status indicator */}
-          {todaysChallenge && (
-            <div className="challenge-status">
-              <span className={`challenge-indicator ${challengeCompleted ? 'completed' : 'active'}`}>
-                {todaysChallenge.icon} {challengeCompleted ? 'Challenge Complete!' : challengeProgress || todaysChallenge.title}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
       
       {/* FAB Menu - replaces all scattered buttons */}
       <FABMenu

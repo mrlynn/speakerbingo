@@ -36,6 +36,10 @@ export default function MessageBanner({ onChallengeClick, onAdClick, isMobile })
   return (
     <div className="message-banner">
       <div className="banner-content" onClick={handleClick}>
+        <div className="banner-type-indicator">
+          {currentMessage.type === 'challenge' ? '🎯' : '💬'}
+        </div>
+        
         <div className="scrolling-text">
           <span className="message-text">{currentMessage.message}</span>
         </div>
@@ -62,27 +66,40 @@ export default function MessageBanner({ onChallengeClick, onAdClick, isMobile })
           width: 100%;
           max-width: ${isMobile ? '100%' : '600px'};
           margin: 0 auto 16px auto;
-          background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
-          border-radius: 8px;
+          background: linear-gradient(135deg, #9B59B6 0%, #E74C3C 50%, #F39C12 100%);
+          border: 2px solid rgba(255, 255, 255, 0.4);
+          border-radius: 12px;
           padding: 0;
-          box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+          box-shadow: 
+            0 4px 16px rgba(155, 89, 182, 0.3),
+            0 2px 8px rgba(0, 0, 0, 0.1);
           overflow: hidden;
           position: relative;
           cursor: pointer;
           transition: all 0.3s ease;
+          animation: bannerGlow 6s ease-in-out infinite;
         }
         
         .message-banner:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
+          transform: translateY(-2px);
+          box-shadow: 
+            0 8px 25px rgba(155, 89, 182, 0.5),
+            0 4px 12px rgba(0, 0, 0, 0.15);
+          animation-play-state: paused;
         }
         
         .banner-content {
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          gap: 12px;
           padding: 12px 40px 12px 16px;
           min-height: 48px;
+        }
+        
+        .banner-type-indicator {
+          font-size: 20px;
+          flex-shrink: 0;
+          opacity: 0.9;
         }
         
         .scrolling-text {
@@ -103,7 +120,6 @@ export default function MessageBanner({ onChallengeClick, onAdClick, isMobile })
         }
         
         .banner-actions {
-          margin-left: 16px;
           flex-shrink: 0;
         }
         
@@ -172,6 +188,27 @@ export default function MessageBanner({ onChallengeClick, onAdClick, isMobile })
         /* Pause animation on hover */
         .message-banner:hover .message-text {
           animation-play-state: paused;
+        }
+        
+        @keyframes bannerGlow {
+          0%, 100% { 
+            box-shadow: 
+              0 4px 16px rgba(155, 89, 182, 0.3),
+              0 2px 8px rgba(0, 0, 0, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+          }
+          33% { 
+            box-shadow: 
+              0 6px 20px rgba(231, 76, 60, 0.4),
+              0 3px 10px rgba(0, 0, 0, 0.12);
+            border-color: rgba(231, 76, 60, 0.5);
+          }
+          66% { 
+            box-shadow: 
+              0 6px 20px rgba(243, 156, 18, 0.4),
+              0 3px 10px rgba(0, 0, 0, 0.12);
+            border-color: rgba(243, 156, 18, 0.5);
+          }
         }
       `}</style>
     </div>
