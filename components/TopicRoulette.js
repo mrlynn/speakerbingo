@@ -6,6 +6,10 @@ export default function TopicRoulette({ onTopicSelected, isMobile }) {
   const [selectedTopic, setSelectedTopic] = useState(null)
   const [spinHistory, setSpinHistory] = useState([])
   const [currentRotation, setCurrentRotation] = useState(0)
+  const [userGuidance, setUserGuidance] = useState('')
+  const [generatedParagraph, setGeneratedParagraph] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [showAISection, setShowAISection] = useState(false)
   const wheelRef = useRef(null)
   
   const categories = getAllCategories()
@@ -56,13 +60,58 @@ export default function TopicRoulette({ onTopicSelected, isMobile }) {
   
   const handleSpinAgain = () => {
     setSelectedTopic(null)
+    setGeneratedParagraph('')
+    setShowAISection(false)
+    setUserGuidance('')
     handleSpin()
+  }
+  
+  const generateOpeningParagraph = async () => {
+    if (!selectedTopic) return
+    
+    setIsGenerating(true)
+    try {
+      const response = await fetch('/api/generate-opening', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic: selectedTopic,
+          userGuidance: userGuidance.trim()
+        }),
+      })
+
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate opening paragraph')
+      }
+
+      setGeneratedParagraph(data.paragraph)
+    } catch (error) {
+      console.error('Error generating paragraph:', error)
+      setGeneratedParagraph(`Sorry, I couldn't generate an opening paragraph right now. Please try again later. Error: ${error.message}`)
+    } finally {
+      setIsGenerating(false)
+    }
   }
   
   const copyTopic = () => {
     if (selectedTopic) {
-      const text = `Meeting Topic: ${selectedTopic.title}\\n\\n${selectedTopic.description}\\n\\nDiscussion Questions:\\n${selectedTopic.questions.map(q => `• ${q}`).join('\\n')}`
+      let text = `Meeting Topic: ${selectedTopic.title}\\n\\n${selectedTopic.description}\\n\\nDiscussion Questions:\\n${selectedTopic.questions.map(q => `• ${q}`).join('\\n')}`
+      
+      if (generatedParagraph) {
+        text += `\\n\\nSuggested Opening:\\n${generatedParagraph}`
+      }
+      
       navigator.clipboard.writeText(text)
+    }
+  }
+  
+  const copyParagraph = () => {
+    if (generatedParagraph) {
+      navigator.clipboard.writeText(generatedParagraph)
     }
   }
   
@@ -211,7 +260,76 @@ export default function TopicRoulette({ onTopicSelected, isMobile }) {
             <button className="copy-btn" onClick={copyTopic}>
               📋 Copy Topic
             </button>
+            <button 
+              className="ai-generate-btn" 
+              onClick={() => setShowAISection(!showAISection)}
+            >
+              🤖 Generate Opening
+            </button>
           </div>
+          
+          {/* AI Opening Generator Section */}
+          {showAISection && (
+            <div className="ai-section">
+              <h4>🤖 AI Meeting Opening Generator</h4>
+              <p>Get a personalized opening paragraph to introduce this topic at your meeting.</p>
+              
+              <div className="guidance-input">
+                <label htmlFor="user-guidance">
+                  Optional: Any specific guidance or focus for the opening? (e.g., "focus on newcomers", "emphasize gratitude", "address recent challenges")
+                </label>
+                <textarea
+                  id="user-guidance"
+                  value={userGuidance}
+                  onChange={(e) => setUserGuidance(e.target.value)}
+                  placeholder="Enter any specific guidance to help tailor the opening paragraph..."
+                  rows="3"
+                  maxLength="200"
+                />
+                <small>{userGuidance.length}/200 characters</small>
+              </div>
+              
+              <div className="ai-actions">
+                <button 
+                  className="generate-btn" 
+                  onClick={generateOpeningParagraph}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <span className="loading-spinner">⏳</span>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      ✨ Generate Opening
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {generatedParagraph && (
+                <div className="generated-content">
+                  <h5>📝 Suggested Meeting Opening:</h5>
+                  <div className="paragraph-content">
+                    {generatedParagraph}
+                  </div>
+                  <div className="paragraph-actions">
+                    <button className="copy-paragraph-btn" onClick={copyParagraph}>
+                      📋 Copy Opening
+                    </button>
+                    <button 
+                      className="regenerate-btn" 
+                      onClick={generateOpeningParagraph}
+                      disabled={isGenerating}
+                    >
+                      🔄 Regenerate
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
       
@@ -402,7 +520,7 @@ export default function TopicRoulette({ onTopicSelected, isMobile }) {
           flex-wrap: wrap;
         }
         
-        .spin-again-btn, .copy-btn {
+        .spin-again-btn, .copy-btn, .ai-generate-btn, .generate-btn, .copy-paragraph-btn, .regenerate-btn {
           padding: 10px 20px;
           border: none;
           border-radius: 25px;
@@ -410,6 +528,10 @@ export default function TopicRoulette({ onTopicSelected, isMobile }) {
           cursor: pointer;
           transition: all 0.3s ease;
           font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          justify-content: center;
         }
         
         .spin-again-btn {
@@ -433,6 +555,169 @@ export default function TopicRoulette({ onTopicSelected, isMobile }) {
           background: var(--sunrise-gold);
           color: white;
           transform: translateY(-1px);
+        }
+        
+        .ai-generate-btn {
+          background: linear-gradient(135deg, #9B59B6 0%, #8E44AD 100%);
+          color: white;
+          box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
+        }
+        
+        .ai-generate-btn:hover {
+          background: linear-gradient(135deg, #8E44AD 0%, #9B59B6 100%);
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(155, 89, 182, 0.4);
+        }
+        
+        .ai-section {
+          background: rgba(155, 89, 182, 0.05);
+          border: 2px solid rgba(155, 89, 182, 0.2);
+          border-radius: 16px;
+          padding: 20px;
+          margin-top: 20px;
+          animation: slideIn 0.3s ease-out;
+        }
+        
+        .ai-section h4 {
+          color: #9B59B6;
+          font-size: 1.2rem;
+          font-weight: 700;
+          margin: 0 0 8px 0;
+        }
+        
+        .ai-section p {
+          color: #666;
+          font-size: 0.9rem;
+          margin: 0 0 16px 0;
+        }
+        
+        .guidance-input {
+          margin-bottom: 16px;
+        }
+        
+        .guidance-input label {
+          display: block;
+          color: #555;
+          font-weight: 600;
+          font-size: 0.9rem;
+          margin-bottom: 8px;
+          line-height: 1.4;
+        }
+        
+        .guidance-input textarea {
+          width: 100%;
+          padding: 10px;
+          border: 2px solid rgba(155, 89, 182, 0.2);
+          border-radius: 8px;
+          font-family: inherit;
+          font-size: 0.9rem;
+          resize: vertical;
+          transition: border-color 0.3s ease;
+          box-sizing: border-box;
+        }
+        
+        .guidance-input textarea:focus {
+          outline: none;
+          border-color: #9B59B6;
+          box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.1);
+        }
+        
+        .guidance-input small {
+          color: #888;
+          font-size: 0.8rem;
+          margin-top: 4px;
+          display: block;
+        }
+        
+        .ai-actions {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 16px;
+        }
+        
+        .generate-btn {
+          background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%);
+          color: white;
+          box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+          min-width: 160px;
+        }
+        
+        .generate-btn:hover:not(:disabled) {
+          background: linear-gradient(135deg, #2ECC71 0%, #27AE60 100%);
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(39, 174, 96, 0.4);
+        }
+        
+        .generate-btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+          transform: none;
+        }
+        
+        .loading-spinner {
+          animation: spin 1s linear infinite;
+        }
+        
+        .generated-content {
+          background: rgba(39, 174, 96, 0.05);
+          border: 2px solid rgba(39, 174, 96, 0.2);
+          border-radius: 12px;
+          padding: 16px;
+          margin-top: 16px;
+        }
+        
+        .generated-content h5 {
+          color: #27AE60;
+          font-size: 1rem;
+          font-weight: 700;
+          margin: 0 0 12px 0;
+        }
+        
+        .paragraph-content {
+          background: white;
+          padding: 16px;
+          border-radius: 8px;
+          border: 1px solid rgba(39, 174, 96, 0.2);
+          line-height: 1.6;
+          color: #333;
+          font-size: 0.95rem;
+          margin-bottom: 16px;
+          white-space: pre-wrap;
+        }
+        
+        .paragraph-actions {
+          display: flex;
+          gap: 8px;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+        
+        .copy-paragraph-btn {
+          background: rgba(39, 174, 96, 0.1);
+          color: #27AE60;
+          border: 2px solid rgba(39, 174, 96, 0.3);
+        }
+        
+        .copy-paragraph-btn:hover {
+          background: rgba(39, 174, 96, 0.2);
+          transform: translateY(-1px);
+        }
+        
+        .regenerate-btn {
+          background: rgba(255, 193, 7, 0.1);
+          color: #F39C12;
+          border: 2px solid rgba(243, 156, 18, 0.3);
+        }
+        
+        .regenerate-btn:hover:not(:disabled) {
+          background: rgba(255, 193, 7, 0.2);
+          transform: translateY(-1px);
+        }
+        
+        .regenerate-btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+          transform: none;
         }
         
         .instructions {
@@ -504,6 +789,22 @@ export default function TopicRoulette({ onTopicSelected, isMobile }) {
           }
         }
         
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        
         @media (max-width: 768px) {
           .topic-roulette {
             padding: 16px;
@@ -518,9 +819,18 @@ export default function TopicRoulette({ onTopicSelected, isMobile }) {
             align-items: center;
           }
           
-          .spin-again-btn, .copy-btn {
+          .spin-again-btn, .copy-btn, .ai-generate-btn, .generate-btn, .copy-paragraph-btn, .regenerate-btn {
             width: 100%;
             max-width: 200px;
+          }
+          
+          .ai-section {
+            padding: 16px;
+          }
+          
+          .paragraph-actions {
+            flex-direction: column;
+            align-items: center;
           }
         }
       `}</style>
