@@ -1614,17 +1614,28 @@ export default function Home() {
           display: grid;
           grid-template-columns: ${isMobile ? 'repeat(5, 1fr)' : `repeat(5, ${cellSize}px)`};
           gap: ${isMobile ? '2px' : '4px'};
-          margin-bottom: 8px;
+          margin-bottom: 0;
           width: ${isMobile ? '100%' : 'fit-content'};
+          border: 3px solid #FF6B35;
+          border-radius: 12px 12px 0 0;
+          background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+          padding: ${isMobile ? '6px' : '8px'};
+          box-sizing: border-box;
         }
         
         .header-cell {
-          height: ${isMobile ? '40px' : isTablet ? '60px' : '75px'};
+          height: ${isMobile ? 'auto' : isTablet ? '60px' : '75px'};
+          aspect-ratio: ${isMobile ? '1' : 'auto'};
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: ${isMobile ? '1.5rem' : isTablet ? '2.8rem' : '3.5rem'};
-          aspect-ratio: ${isMobile ? '1' : 'auto'};
+          font-size: ${isMobile ? '1.2rem' : isTablet ? '2.8rem' : '3.5rem'};
+          font-weight: 900;
+          color: white;
+          text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 8px;
+          min-height: ${isMobile ? '36px' : 'auto'};
         }
         
         .bingo-grid {
@@ -1632,6 +1643,7 @@ export default function Home() {
           grid-template-columns: ${isMobile ? 'repeat(5, 1fr)' : `repeat(5, ${cellSize}px)`};
           gap: ${isMobile ? '2px' : '4px'};
           border: 3px solid #FF6B35;
+          border-top: none;
           border-radius: 0 0 12px 12px;
           background: #FFF8E1;
           padding: ${isMobile ? '6px' : '8px'};
