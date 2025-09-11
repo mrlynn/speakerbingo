@@ -139,6 +139,9 @@ export default function GameHeader({
               <span className="players-names">
                 {gameState.players.map(p => p.name).join(', ')}
               </span>
+              <span className="view-players-hint">
+                💡 Use menu to view all boards
+              </span>
             </div>
           )}
         </div>
@@ -400,6 +403,13 @@ export default function GameHeader({
         
         .players-names {
           font-style: italic;
+        }
+        
+        .view-players-hint {
+          font-size: 0.75rem;
+          color: #888;
+          font-style: italic;
+          margin-left: 8px;
         }
         
         @keyframes bounce {

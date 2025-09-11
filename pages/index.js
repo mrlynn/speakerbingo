@@ -518,6 +518,8 @@ export default function Home() {
       await navigator.clipboard.writeText(roomCode)
       setShareSuccess(true)
       setShareDialogOpen(false)
+      // Auto-hide notification after 3 seconds
+      setTimeout(() => setShareSuccess(false), 3000)
     } catch (err) {
       // Fallback for older browsers
       const textArea = document.createElement('textarea')
@@ -528,6 +530,8 @@ export default function Home() {
       document.body.removeChild(textArea)
       setShareSuccess(true)
       setShareDialogOpen(false)
+      // Auto-hide notification after 3 seconds
+      setTimeout(() => setShareSuccess(false), 3000)
     }
   }
 
@@ -537,6 +541,8 @@ export default function Home() {
       await navigator.clipboard.writeText(gameUrl)
       setShareSuccess(true)
       setShareDialogOpen(false)
+      // Auto-hide notification after 3 seconds
+      setTimeout(() => setShareSuccess(false), 3000)
     } catch (err) {
       // Fallback
       const textArea = document.createElement('textarea')
@@ -547,6 +553,8 @@ export default function Home() {
       document.body.removeChild(textArea)
       setShareSuccess(true)
       setShareDialogOpen(false)
+      // Auto-hide notification after 3 seconds
+      setTimeout(() => setShareSuccess(false), 3000)
     }
   }
 
@@ -554,8 +562,8 @@ export default function Home() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Join my Sunrise Semester Speaker Bingo Game!',
-          text: `Come play Sunrise Semester Speaker Bingo with me! Room code: ${roomCode}`,
+          title: 'Join my Semester Speaker Bingo Game!',
+          text: `Come play Semester Speaker Bingo with me! Room code: ${roomCode}`,
           url: `${window.location.origin}${window.location.pathname}?room=${roomCode}`
         })
         setShareDialogOpen(false)
@@ -886,16 +894,11 @@ export default function Home() {
 
   return (
     <div className="game-container">
-      {/* Ghibli-Style Sunrise Scene Background Elements */}
-      <div className="sun-decoration"></div>
-      <div className="sun-reflection"></div>
-      <div className="cloud cloud1"></div>
-      <div className="cloud cloud2"></div>
-      <div className="water-wave"></div>
-      <div className="ghibli-particles"></div>
+      {/* Background Elements */}
+      <div className="particles"></div>
         
         <h1 className="title sunrise-title">
-          Sunrise Semester Speaker Bingo
+          Semester Speaker Bingo
         </h1>
       
       {/* Unified Game Header */}
@@ -1219,10 +1222,17 @@ export default function Home() {
                             className={`mini-cell ${
                               player.selected && player.selected[r] && player.selected[r][c] ? 'selected' : ''
                             } ${r === 2 && c === 2 ? 'free' : ''}`}
-                            title={phrase}
                           >
-                            {r === 2 && c === 2 ? 'F' : 
-                             player.selected && player.selected[r] && player.selected[r][c] ? '✓' : ''}
+                            <div className="mini-cell-content">
+                              <span className="mini-cell-text" title={phrase}>
+                                {phrase}
+                              </span>
+                              {(r === 2 && c === 2) ? (
+                                <span className="mini-cell-icon">☀️</span>
+                              ) : player.selected && player.selected[r] && player.selected[r][c] ? (
+                                <span className="mini-cell-check">✓</span>
+                              ) : null}
+                            </div>
                           </div>
                         ))
                       )}
@@ -1292,7 +1302,10 @@ export default function Home() {
       {/* Success Notification */}
       {shareSuccess && (
         <div className="notification">
-          ✨ Copied to clipboard! Ready to share your sunrise adventure!
+          <div className="notification-content">
+            ✨ Copied to clipboard! Ready to share your adventure!
+          </div>
+          <button className="notification-close" onClick={() => setShareSuccess(false)}>×</button>
         </div>
       )}
 
@@ -1982,6 +1995,30 @@ export default function Home() {
           box-shadow: 0 4px 12px rgba(0,0,0,0.2);
           z-index: 1001;
           animation: slideUp 0.3s ease-out;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        .notification-content {
+          flex: 1;
+        }
+        
+        .notification-close {
+          background: none;
+          border: none;
+          color: #666;
+          font-size: 20px;
+          cursor: pointer;
+          padding: 0 4px;
+          line-height: 1;
+          font-weight: 700;
+          transition: all 0.2s ease;
+        }
+        
+        .notification-close:hover {
+          color: #FF6B35;
+          transform: scale(1.2);
         }
         
         .challenge-notification {
@@ -2169,13 +2206,14 @@ export default function Home() {
         }
         
         .players-dialog {
-          max-width: 800px;
+          max-width: 900px;
           max-height: 85vh;
+          width: 90%;
         }
         
         .players-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
           gap: 20px;
           padding: 10px 0;
         }
@@ -2186,6 +2224,8 @@ export default function Home() {
           border-radius: 12px;
           padding: 16px;
           transition: all 0.3s ease;
+          display: flex;
+          flex-direction: column;
         }
         
         .player-board:hover {
@@ -2236,10 +2276,12 @@ export default function Home() {
         .mini-bingo-grid {
           display: grid;
           grid-template-columns: repeat(5, 1fr);
-          gap: 2px;
+          gap: 3px;
           background: #FF6B35;
           border-radius: 8px;
           padding: 4px;
+          aspect-ratio: 1;
+          width: 100%;
         }
         
         .mini-cell {
@@ -2252,23 +2294,88 @@ export default function Home() {
           font-weight: 600;
           border-radius: 2px;
           transition: all 0.2s ease;
+          position: relative;
+          overflow: hidden;
+          padding: 2px;
+        }
+        
+        .mini-cell-content {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          width: 100%;
+          position: relative;
+        }
+        
+        .mini-cell-text {
+          font-size: 0.6rem;
+          line-height: 1;
+          text-align: center;
+          word-break: break-word;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          max-height: 80%;
+          padding: 1px;
+        }
+        
+        .mini-cell-check {
+          position: absolute;
+          top: 0;
+          right: 0;
+          background: rgba(247, 147, 30, 0.8);
+          color: white;
+          border-radius: 0 0 0 4px;
+          padding: 1px 3px;
+          font-size: 0.6rem;
+          line-height: 1;
+        }
+        
+        .mini-cell-icon {
+          font-size: 1rem;
+          opacity: 0.5;
+          position: absolute;
         }
         
         .mini-cell.selected {
-          background: #F7931E;
-          color: white;
+          background: rgba(247, 147, 30, 0.2);
+          border: 1px solid #F7931E;
         }
         
         .mini-cell.free {
-          background: #FFD23F;
-          color: #FF6B35;
-          font-weight: 800;
+          background: rgba(255, 210, 63, 0.2);
+          border: 1px solid #FFD23F;
         }
         
         .mini-cell:hover {
           transform: scale(1.1);
-          z-index: 1;
+          z-index: 10;
           position: relative;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        
+        @media (max-width: 768px) {
+          .players-dialog {
+            max-width: 95%;
+            max-height: 90vh;
+          }
+          
+          .players-grid {
+            grid-template-columns: 1fr;
+          }
+          
+          .mini-cell-text {
+            font-size: 0.55rem;
+            -webkit-line-clamp: 1;
+          }
+          
+          .mini-cell-check {
+            font-size: 0.5rem;
+            padding: 0px 2px;
+          }
         }
         
         .about-dialog {

@@ -1,7 +1,7 @@
-/* Sunrise Semester Theme - Peaceful, Warm, Inviting */
+/* Semester Theme - Peaceful, Warm, Inviting */
 
 :root {
-  /* Sunrise Color Palette */
+  /* Color Palette */
   --sunrise-rust: #8B4513;
   --sunrise-rust-dark: #A0522D;
   --sunrise-navy: #2C3E50;
@@ -16,7 +16,7 @@
   
   /* Gradients */
   --gradient-sunrise: linear-gradient(135deg, #FFE0B2 0%, #FFAB91 25%, #FF7043 50%, #FFD180 75%, #FFF8E1 100%);
-  --gradient-sky: linear-gradient(180deg, #87CEEB 0%, #FFE0B2 50%, #FFAB91 100%);
+  --gradient-sky: linear-gradient(180deg, #87CEEB 0%, #FFFFFF 100%);
   --gradient-water: linear-gradient(180deg, #5F9EA0 0%, #4DD0E1 100%);
   --gradient-cream: linear-gradient(135deg, #FFF8E1 0%, #FFE0B2 100%);
   --gradient-selected: linear-gradient(135deg, #4DD0E1 0%, #FFD180 100%);
@@ -25,140 +25,18 @@
   --shadow-soft: 0 2px 8px rgba(139, 69, 19, 0.1);
   --shadow-hover: 0 4px 16px rgba(255, 215, 128, 0.3);
   --shadow-selected: 0 0 20px rgba(255, 215, 128, 0.6);
-  --glow-sunrise: 0 0 30px rgba(255, 112, 67, 0.4);
+  --glow-sunrise: 0 0 30px rgba(77, 208, 225, 0.4);
 }
 
-/* Background with Sunrise Scene */
+/* Background */
 body {
   background: var(--gradient-sky);
   position: relative;
   overflow-x: hidden;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 40%;
-  background: var(--gradient-water);
-  z-index: -2;
-}
 
-/* Animated Sun */
-.sun-decoration {
-  position: fixed;
-  bottom: 20%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 150px;
-  height: 150px;
-  background: radial-gradient(circle, #FFD700 0%, #FFA500 50%, #FF7043 100%);
-  border-radius: 50%;
-  box-shadow: var(--glow-sunrise);
-  z-index: -1;
-  animation: sunPulse 4s ease-in-out infinite;
-}
 
-@keyframes sunPulse {
-  0%, 100% { 
-    box-shadow: 0 0 30px rgba(255, 112, 67, 0.4);
-    transform: translateX(-50%) scale(1);
-  }
-  50% { 
-    box-shadow: 0 0 50px rgba(255, 215, 0, 0.6);
-    transform: translateX(-50%) scale(1.05);
-  }
-}
-
-/* Sun Reflection on Water */
-.sun-reflection {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 200px;
-  height: 20%;
-  background: linear-gradient(180deg, 
-    rgba(255, 215, 0, 0.3) 0%, 
-    rgba(255, 165, 0, 0.2) 50%, 
-    rgba(255, 215, 0, 0.1) 100%
-  );
-  filter: blur(20px);
-  z-index: -1;
-  animation: shimmer 3s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0%, 100% { opacity: 0.6; transform: translateX(-50%) scaleX(1); }
-  50% { opacity: 0.8; transform: translateX(-50%) scaleX(1.2); }
-}
-
-/* Floating Clouds */
-.cloud {
-  position: fixed;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 100px;
-  opacity: 0.8;
-  z-index: -1;
-}
-
-.cloud::before,
-.cloud::after {
-  content: '';
-  position: absolute;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 100px;
-}
-
-.cloud1 {
-  width: 100px;
-  height: 40px;
-  top: 20%;
-  animation: cloudDrift 45s linear infinite;
-}
-
-.cloud1::before {
-  width: 50px;
-  height: 50px;
-  top: -25px;
-  left: 10px;
-}
-
-.cloud1::after {
-  width: 60px;
-  height: 40px;
-  top: -15px;
-  right: 10px;
-}
-
-.cloud2 {
-  width: 80px;
-  height: 35px;
-  top: 30%;
-  animation: cloudDrift 60s linear infinite;
-  animation-delay: -20s;
-}
-
-.cloud2::before {
-  width: 60px;
-  height: 45px;
-  top: -22px;
-  left: 15px;
-}
-
-.cloud2::after {
-  width: 50px;
-  height: 35px;
-  top: -10px;
-  right: 15px;
-}
-
-@keyframes cloudDrift {
-  from { left: -200px; }
-  to { left: 100%; }
-}
 
 /* Main Title Styling */
 .sunrise-title {
@@ -428,7 +306,8 @@ body::before {
   .sun-decoration {
     width: 100px;
     height: 100px;
-    bottom: 15%;
+    bottom: 10%;
+    right: 5%;
   }
   
   .sunrise-header-cell {

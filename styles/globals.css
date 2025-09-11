@@ -1,6 +1,6 @@
-/* Sunrise Semester Theme Variables */
+/* Semester Theme Variables */
 :root {
-  /* Sunrise Color Palette */
+  /* Color Palette */
   --sunrise-rust: #8B4513;
   --sunrise-rust-dark: #A0522D;
   --sunrise-navy: #2C3E50;
@@ -15,7 +15,7 @@
   
   /* Gradients */
   --gradient-sunrise: linear-gradient(135deg, #FFE0B2 0%, #FFAB91 25%, #FF7043 50%, #FFD180 75%, #FFF8E1 100%);
-  --gradient-sky: linear-gradient(180deg, #87CEEB 0%, #FFE0B2 50%, #FFAB91 100%);
+  --gradient-sky: linear-gradient(180deg, #87CEEB 0%, #FFFFFF 100%);
   --gradient-water: linear-gradient(180deg, #5F9EA0 0%, #4DD0E1 100%);
   --gradient-cream: linear-gradient(135deg, #FFF8E1 0%, #FFE0B2 100%);
   --gradient-selected: linear-gradient(135deg, #4DD0E1 0%, #FFD180 100%);
@@ -24,7 +24,7 @@
   --shadow-soft: 0 2px 8px rgba(139, 69, 19, 0.1);
   --shadow-hover: 0 4px 16px rgba(255, 215, 128, 0.3);
   --shadow-selected: 0 0 20px rgba(255, 215, 128, 0.6);
-  --glow-sunrise: 0 0 30px rgba(255, 112, 67, 0.4);
+  --glow-sunrise: 0 0 30px rgba(77, 208, 225, 0.4);
 }
 
 * {
@@ -47,19 +47,20 @@ body {
   background: var(--gradient-sky);
   position: relative;
   overflow-x: hidden;
+  background-attachment: fixed;
 }
 
-/* Sunrise animated background */
-@keyframes sunriseGlow {
+/* Animated background */
+@keyframes bgGlow {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
 .sunrise-bg {
-  background: linear-gradient(135deg, #FF6B35, #F7931E, #FFD23F, #FF9500);
+  background: linear-gradient(135deg, #4DD0E1, #5F9EA0, #87CEEB, #5F9EA0);
   background-size: 300% 300%;
-  animation: sunriseGlow 8s ease infinite;
+  animation: bgGlow 8s ease infinite;
 }
 
 /* Prevent text selection on bingo cells */
@@ -105,9 +106,9 @@ body {
   }
 }
 
-/* Ghibli-Style Background Layers */
+/* Background Layers */
 
-/* Sky with soft painterly effect */
+/* Soft painterly effect */
 body::after {
   content: '';
   position: fixed;
@@ -116,10 +117,10 @@ body::after {
   right: 0;
   bottom: 0;
   background: 
-    radial-gradient(ellipse at 30% 20%, rgba(255, 182, 193, 0.3) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 30%, rgba(255, 218, 185, 0.2) 0%, transparent 60%),
+    radial-gradient(ellipse at 30% 20%, rgba(173, 216, 230, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 30%, rgba(77, 208, 225, 0.2) 0%, transparent 60%),
     radial-gradient(ellipse at 20% 80%, rgba(173, 216, 230, 0.15) 0%, transparent 40%);
-  z-index: -3;
+  z-index: -4;
   animation: skyShimmer 20s ease-in-out infinite;
 }
 
@@ -128,198 +129,13 @@ body::after {
   50% { opacity: 1; }
 }
 
-/* Water with Ghibli-style ripples */
-body::before {
-  content: '';
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 40%;
-  background: 
-    var(--gradient-water),
-    radial-gradient(ellipse at 20% 100%, rgba(255, 255, 255, 0.1) 0%, transparent 30%),
-    radial-gradient(ellipse at 80% 100%, rgba(255, 255, 255, 0.08) 0%, transparent 25%);
-  z-index: -2;
-}
 
-/* Ghibli-Style Animated Sun */
-.sun-decoration {
-  position: fixed;
-  bottom: 20%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 180px;
-  height: 180px;
-  background: 
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, transparent 20%),
-    radial-gradient(circle, #FFE55C 0%, #FFB347 40%, #FF8C42 70%, #FF6B35 100%);
-  border-radius: 50%;
-  box-shadow: 
-    0 0 40px rgba(255, 215, 0, 0.6),
-    0 0 80px rgba(255, 165, 0, 0.4),
-    0 0 120px rgba(255, 140, 66, 0.2);
-  z-index: -1;
-  animation: ghibliSunPulse 6s ease-in-out infinite;
-}
 
-.sun-decoration::before {
-  content: '';
-  position: absolute;
-  top: -20px;
-  left: -20px;
-  right: -20px;
-  bottom: -20px;
-  background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
-  border-radius: 50%;
-  animation: sunHalo 8s ease-in-out infinite reverse;
-}
 
-@keyframes ghibliSunPulse {
-  0%, 100% { 
-    box-shadow: 
-      0 0 40px rgba(255, 215, 0, 0.6),
-      0 0 80px rgba(255, 165, 0, 0.4),
-      0 0 120px rgba(255, 140, 66, 0.2);
-    transform: translateX(-50%) scale(1);
-  }
-  50% { 
-    box-shadow: 
-      0 0 60px rgba(255, 215, 0, 0.8),
-      0 0 120px rgba(255, 165, 0, 0.6),
-      0 0 180px rgba(255, 140, 66, 0.3);
-    transform: translateX(-50%) scale(1.03);
-  }
-}
 
-@keyframes sunHalo {
-  0%, 100% { 
-    opacity: 0.3;
-    transform: scale(1);
-  }
-  50% { 
-    opacity: 0.6;
-    transform: scale(1.1);
-  }
-}
 
-/* Sun Reflection on Water */
-.sun-reflection {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 200px;
-  height: 20%;
-  background: linear-gradient(180deg, 
-    rgba(255, 215, 0, 0.3) 0%, 
-    rgba(255, 165, 0, 0.2) 50%, 
-    rgba(255, 215, 0, 0.1) 100%
-  );
-  filter: blur(20px);
-  z-index: -1;
-  animation: shimmer 3s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0%, 100% { opacity: 0.6; transform: translateX(-50%) scaleX(1); }
-  50% { opacity: 0.8; transform: translateX(-50%) scaleX(1.2); }
-}
-
-/* Ghibli-Style Fluffy Clouds */
-.cloud {
-  position: fixed;
-  background: 
-    radial-gradient(ellipse at 30% 30%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
-  border-radius: 100px;
-  opacity: 0.85;
-  z-index: -1;
-  filter: blur(0.5px);
-  animation: cloudFloat 3s ease-in-out infinite;
-}
-
-.cloud::before,
-.cloud::after {
-  content: '';
-  position: absolute;
-  background: 
-    radial-gradient(ellipse at 40% 40%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.75) 100%);
-  border-radius: 100px;
-  filter: blur(0.3px);
-}
-
-@keyframes cloudFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-5px); }
-}
-
-.cloud1 {
-  width: 100px;
-  height: 40px;
-  top: 20%;
-  animation: cloudDrift 45s linear infinite;
-}
-
-.cloud1::before {
-  width: 50px;
-  height: 50px;
-  top: -25px;
-  left: 10px;
-}
-
-.cloud1::after {
-  width: 60px;
-  height: 40px;
-  top: -15px;
-  right: 10px;
-}
-
-.cloud2 {
-  width: 80px;
-  height: 35px;
-  top: 30%;
-  animation: cloudDrift 60s linear infinite;
-  animation-delay: -20s;
-}
-
-.cloud2::before {
-  width: 60px;
-  height: 45px;
-  top: -22px;
-  left: 15px;
-}
-
-.cloud2::after {
-  width: 50px;
-  height: 35px;
-  top: -10px;
-  right: 15px;
-}
-
-@keyframes cloudDrift {
-  from { left: -200px; }
-  to { left: 100%; }
-}
-
-/* Water Wave Animation */
-.water-wave {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 100px;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path fill="%234DD0E1" fill-opacity="0.3" d="M0,40 C150,80 350,0 600,40 C850,80 1050,0 1200,40 L1200,120 L0,120 Z"></path></svg>');
-  animation: wave 10s linear infinite;
-  z-index: -1;
-}
-
-@keyframes wave {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-/* Ghibli-Style Floating Particles */
-.ghibli-particles {
+/* Floating Particles */
+.particles {
   position: fixed;
   top: 0;
   left: 0;
@@ -329,24 +145,24 @@ body::before {
   z-index: 0;
 }
 
-.ghibli-particles::before,
-.ghibli-particles::after {
+.particles::before,
+.particles::after {
   content: '';
   position: absolute;
   width: 3px;
   height: 3px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 215, 0, 0.3) 100%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(77, 208, 225, 0.3) 100%);
   border-radius: 50%;
   animation: particleFloat 15s linear infinite;
 }
 
-.ghibli-particles::before {
+.particles::before {
   top: -10px;
   left: 20%;
   animation-delay: -3s;
 }
 
-.ghibli-particles::after {
+.particles::after {
   top: -10px;
   left: 80%;
   animation-delay: -8s;
