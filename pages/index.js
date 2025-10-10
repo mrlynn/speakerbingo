@@ -323,26 +323,56 @@ export default function Home() {
     }
   }, [playerProfile, points, bingo, selected, clickCounts, gameStartTime, isMultiplayer, selectedCategory, playerName])
 
-  const handleClick = async (r, c) => {
+  const handleClick = async (r, c, isReset = false) => {
     if (r === 2 && c === 2) return // FREE space
     if (bingo) return // Game over
     
-    const newSelected = selected.map((row, rowIndex) => 
-      row.map((cell, colIndex) => 
-        rowIndex === r && colIndex === c ? !cell : cell
+    const cellKey = `${r}-${c}`
+    let newSelected = [...selected]
+    let newClickCounts = { ...clickCounts }
+    let newPoints = points
+    
+    if (isReset) {
+      // Reset the cell (explicit reset action)
+      newSelected = selected.map((row, rowIndex) => 
+        row.map((cell, colIndex) => 
+          rowIndex === r && colIndex === c ? false : cell
+        )
       )
-    )
+      
+      // Calculate total points that were earned from this cell
+      const currentClicks = clickCounts[cellKey] || 0
+      let totalCellPoints = 0
+      for (let i = 1; i <= currentClicks; i++) {
+        totalCellPoints += calculatePoints(r, c, i)
+      }
+      
+      // Remove this cell's click count and subtract points
+      delete newClickCounts[cellKey]
+      newPoints = points - totalCellPoints
+    } else {
+      if (selected[r][c]) {
+        // Cell is already selected, increment the click count (for repeated phrases)
+        const currentClicks = (clickCounts[cellKey] || 0) + 1
+        newClickCounts[cellKey] = currentClicks
+        const pointsEarned = calculatePoints(r, c, currentClicks)
+        newPoints = points + pointsEarned
+      } else {
+        // Cell is not selected yet, select it and add first click
+        newSelected = selected.map((row, rowIndex) => 
+          row.map((cell, colIndex) => 
+            rowIndex === r && colIndex === c ? true : cell
+          )
+        )
+        const currentClicks = 1
+        newClickCounts[cellKey] = currentClicks
+        const pointsEarned = calculatePoints(r, c, currentClicks)
+        newPoints = points + pointsEarned
+      }
+    }
     
     // Mark center as always selected
     newSelected[2][2] = true
-    
-    // Update click count and calculate points
-    const cellKey = `${r}-${c}`
-    const currentClicks = (clickCounts[cellKey] || 0) + 1
-    const newClickCounts = { ...clickCounts, [cellKey]: currentClicks }
-    
-    const pointsEarned = calculatePoints(r, c, currentClicks)
-    const newPoints = points + pointsEarned
     
     setSelected(newSelected)
     setClickCounts(newClickCounts)
@@ -665,6 +695,8 @@ export default function Home() {
                     
                     <li><strong>Start Listening:</strong> As speakers share, keep your ears open for the phrases on your card. When you hear one, click it! The square will light up with a satisfying orange glow and you'll earn points.</li>
                     
+                    <li><strong>Mark and Reset Phrases:</strong> Click a phrase to mark it. For repeated phrases, click the cell again to add another occurrence and earn more points. Made a mistake? Click the "×" icon in the corner of a marked phrase to reset it completely.</li>
+                    
                     <li><strong>Watch Your Progress:</strong> The FREE space in the center is your gift - it's always marked. Use it wisely as part of your winning strategy!</li>
                     
                     <li><strong>Earn Points:</strong> Each square shows its point value. Corner squares are worth 150 points, edge squares 100 points, and inner squares 75 points. Click the same square multiple times for diminishing bonus points!</li>
@@ -971,16 +1003,38 @@ export default function Home() {
                   key={`${r}-${c}`}
                   className={`grid-cell sunrise-grid-cell ${selected[r] && selected[r][c] ? 'selected' : ''} ${r === 2 && c === 2 ? 'free' : ''}`}
                   onClick={() => handleClick(r, c)}
+                  title={selected[r] && selected[r][c] ? "Click to add another occurrence of this phrase" : "Click to mark this phrase"}
                 >
                   {r === 2 && c === 2 && <div className="free-icon">☀️</div>}
-                  {selected[r] && selected[r][c] && !(r === 2 && c === 2) && <div className="selected-icon">✨</div>}
+                  {selected[r] && selected[r][c] && !(r === 2 && c === 2) && (
+                    <div className="selected-icon">
+                      <span className="icon-wrapper">✨</span>
+                      <span 
+                        className="reset-hint"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent cell click
+                          handleClick(r, c, true); // Call with reset flag
+                        }}
+                        title="Reset this phrase"
+                      >×</span>
+                    </div>
+                  )}
                   <div className="cell-content">
                     <span className="cell-text">{phrase}</span>
                     {!(r === 2 && c === 2) && (
                       <div className="cell-info">
-                        <div className="point-value sunrise-point-value">
-                          {calculatePoints(r, c, (clickCounts[`${r}-${c}`] || 0) + 1)}
-                        </div>
+                        {selected[r] && selected[r][c] ? (
+                          <div className="action-buttons">
+                            <div className="point-value sunrise-point-value add-click"
+                                 title="Add another occurrence">
+                              +{calculatePoints(r, c, (clickCounts[`${r}-${c}`] || 0) + 1)}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="point-value sunrise-point-value">
+                            {calculatePoints(r, c, 1)}
+                          </div>
+                        )}
                         {clickCounts[`${r}-${c}`] && (
                           <div className="click-count">
                             x{clickCounts[`${r}-${c}`]}
@@ -1151,6 +1205,8 @@ export default function Home() {
                   <li><strong>Choose Your Phrases:</strong> Pick a category that matches your meeting type. "Sunrise Regulars" for general meetings, "Steps & Traditions" for step meetings, or go wild with "Clutter Words" if you want a real challenge!</li>
                   
                   <li><strong>Start Listening:</strong> As speakers share, keep your ears open for the phrases on your card. When you hear one, click it! The square will light up with a satisfying orange glow.</li>
+                  
+                  <li><strong>Mark and Reset Phrases:</strong> Click a phrase to mark it. For repeated phrases, click the cell again to add another occurrence and earn more points. Made a mistake? Click the "×" icon in the corner of a marked phrase to reset it completely.</li>
                   
                   <li><strong>Watch Your Progress:</strong> The FREE space in the center is your gift - it's always marked. Use it wisely as part of your winning strategy!</li>
                   
@@ -1718,7 +1774,64 @@ export default function Home() {
           font-size: ${isMobile ? '1.5rem' : '2rem'};
           color: white;
           z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: 100%;
+        }
+        
+        .icon-wrapper {
           animation: bounce 1s ease-in-out infinite;
+        }
+        
+        .reset-hint {
+          position: absolute;
+          top: 4px;
+          right: 4px;
+          font-size: ${isMobile ? '0.8rem' : '1rem'};
+          background-color: rgba(255, 107, 53, 0.9);
+          border-radius: 50%;
+          width: ${isMobile ? '16px' : '20px'};
+          height: ${isMobile ? '16px' : '20px'};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+          opacity: 0.7;
+          transition: all 0.2s ease;
+          cursor: pointer;
+          z-index: 10;
+        }
+        
+        .grid-cell.selected:hover .reset-hint {
+          opacity: 1;
+        }
+        
+        .reset-hint:hover {
+          transform: scale(1.2);
+          background-color: #dc3545;
+          opacity: 1;
+        }
+        
+        .action-buttons {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
+        
+        .add-click {
+          cursor: pointer;
+          transition: all 0.2s ease;
+          background: rgba(40, 167, 69, 0.9) !important;
+          color: white !important;
+          border-color: rgba(40, 167, 69, 0.5) !important;
+        }
+        
+        .add-click:hover {
+          transform: scale(1.1);
+          background: rgba(40, 167, 69, 1) !important;
+          box-shadow: 0 2px 5px rgba(40, 167, 69, 0.5);
         }
         
         .cell-content {
