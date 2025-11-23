@@ -182,6 +182,9 @@ export const authOptions = {
     },
   },
   
+  // Secret for JWT encryption (required in production)
+  secret: process.env.NEXTAUTH_SECRET,
+
   // Enable debug messages in development
   debug: process.env.NODE_ENV === 'development',
 }
