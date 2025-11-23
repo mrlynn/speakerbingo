@@ -4,6 +4,7 @@ import { getPlayerLevel } from '../lib/playerProfile'
 export default function GameHeader({
   playerName,
   playerProfile,
+  playerAvatar,
   points,
   bonusPoints,
   isMultiplayer,
@@ -28,6 +29,13 @@ export default function GameHeader({
         {/* Left Side - Player Info */}
         <div className="player-section">
           <div className="player-identity">
+            {playerAvatar && (
+              <img 
+                src={playerAvatar} 
+                alt={playerName} 
+                className="player-avatar"
+              />
+            )}
             <span className="player-name">
               {playerName || 'Guest'}
             </span>
@@ -177,6 +185,15 @@ export default function GameHeader({
           align-items: center;
           gap: 8px;
           flex-wrap: wrap;
+        }
+        
+        .player-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          border: 2px solid var(--sunrise-gold);
+          object-fit: cover;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
         
         .player-name {

@@ -19,12 +19,17 @@
   --gradient-water: linear-gradient(180deg, #5F9EA0 0%, #4DD0E1 100%);
   --gradient-cream: linear-gradient(135deg, #FFF8E1 0%, #FFE0B2 100%);
   --gradient-selected: linear-gradient(135deg, #4DD0E1 0%, #FFD180 100%);
+  --gradient-fab: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
   
   /* Shadows & Effects */
   --shadow-soft: 0 2px 8px rgba(139, 69, 19, 0.1);
   --shadow-hover: 0 4px 16px rgba(255, 215, 128, 0.3);
   --shadow-selected: 0 0 20px rgba(255, 215, 128, 0.6);
   --glow-sunrise: 0 0 30px rgba(77, 208, 225, 0.4);
+
+  /* Theme background image (set dynamically) */
+  --theme-bg-image: none;
+  --theme-bg-opacity: 0;
 }
 
 * {
@@ -48,6 +53,24 @@ body {
   position: relative;
   overflow-x: hidden;
   background-attachment: fixed;
+}
+
+/* Theme decorative background image */
+body::before {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: clamp(150px, 25vw, 300px);
+  height: clamp(150px, 25vw, 300px);
+  background-image: var(--theme-bg-image);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: bottom left;
+  opacity: var(--theme-bg-opacity, 0);
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity 0.5s ease;
 }
 
 /* Animated background */

@@ -1,9 +1,12 @@
 import Head from 'next/head'
+import { SessionProvider } from 'next-auth/react'
+import { ThemeProvider } from '../lib/ThemeContext'
 import '../styles/globals.css'
 
-function MyApp({ Component, pageProps }) {
+function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   return (
-    <>
+    <SessionProvider session={session}>
+      <ThemeProvider>
       <Head>
         <title>Sunrise Semester Speaker Bingo</title>
         <meta name="description" content="Play Sunrise Semester SpeakerBingo - A fun bingo game with custom phrases" />
@@ -13,7 +16,8 @@ function MyApp({ Component, pageProps }) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <Component {...pageProps} />
-    </>
+      </ThemeProvider>
+    </SessionProvider>
   )
 }
 

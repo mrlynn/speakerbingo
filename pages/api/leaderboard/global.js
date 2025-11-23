@@ -1,19 +1,9 @@
-import { MongoClient } from 'mongodb'
-
-const client = new MongoClient(process.env.MONGODB_URI)
-let db
-
-async function connectToDatabase() {
-  if (!db) {
-    await client.connect()
-    db = client.db('sunrise-bingo')
-  }
-  return db
-}
+import clientPromise from '../../../lib/mongoClient'
 
 export default async function handler(req, res) {
   try {
-    const database = await connectToDatabase()
+    const client = await clientPromise
+    const database = client.db('bingo')
     
     if (req.method === 'GET') {
       // Get top 10 players from leaderboard

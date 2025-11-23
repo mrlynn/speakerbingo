@@ -1,4 +1,6 @@
 import React, { useState } from 'react'
+import ThemePicker from './ThemePicker'
+import { useTheme } from '../lib/ThemeContext'
 
 export default function FABMenu({ 
   isMobile, 
@@ -10,11 +12,14 @@ export default function FABMenu({
   onInstructions,
   onAbout,
   onStopGame,
+  onLogout,
   showShareAndPlayers = false,
   showStopGame = false,
   showStats = false
 }) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [showThemePicker, setShowThemePicker] = useState(false)
+  const { theme } = useTheme()
 
   const menuItems = [
     { 
@@ -67,12 +72,27 @@ export default function FABMenu({
       show: true,
       priority: 7
     },
-    { 
-      icon: 'ℹ️', 
-      label: 'About', 
+    {
+      icon: 'ℹ️',
+      label: 'About',
       action: onAbout,
       show: true,
       priority: 8
+    },
+    {
+      icon: theme?.emoji || '🎨',
+      label: 'Theme',
+      action: () => setShowThemePicker(true),
+      show: true,
+      priority: 9
+    },
+    {
+      icon: '🚪',
+      label: 'Logout',
+      action: onLogout,
+      show: true,
+      priority: 10,
+      destructive: true
     }
   ]
 
@@ -90,6 +110,12 @@ export default function FABMenu({
   }
 
   return (
+    <>
+      <ThemePicker
+        isOpen={showThemePicker}
+        onClose={() => setShowThemePicker(false)}
+        isMobile={isMobile}
+      />
     <div className="fab-menu">
       {/* Backdrop */}
       {isExpanded && (
@@ -157,7 +183,7 @@ export default function FABMenu({
           width: ${isMobile ? '56px' : '64px'};
           height: ${isMobile ? '56px' : '64px'};
           border-radius: 50%;
-          background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+          background: var(--gradient-fab, linear-gradient(135deg, #FF6B35 0%, #F7931E 100%));
           border: none;
           box-shadow: 
             0 6px 20px rgba(255, 107, 53, 0.4),
@@ -180,7 +206,7 @@ export default function FABMenu({
         
         .fab-main.expanded {
           transform: rotate(45deg);
-          background: linear-gradient(135deg, #F7931E 0%, #FF6B35 100%);
+          background: var(--gradient-fab, linear-gradient(135deg, #F7931E 0%, #FF6B35 100%));
         }
         
         .fab-main-icon {
@@ -303,5 +329,6 @@ export default function FABMenu({
         }
       `}</style>
     </div>
+    </>
   )
 }

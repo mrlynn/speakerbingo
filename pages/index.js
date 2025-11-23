@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { signOut } from 'next-auth/react'
+import { useRouter } from 'next/router'
+import { useAuth, clearGuestSession } from '../lib/useAuth'
 import GameLobby from '../components/GameLobby'
 import MessageBanner from '../components/MessageBanner'
 import PlayerStatsModal from '../components/PlayerStatsModal'
@@ -6,6 +9,7 @@ import GlobalLeaderboard from '../components/GlobalLeaderboard'
 import FABMenu from '../components/FABMenu'
 import TopicRouletteModal from '../components/TopicRouletteModal'
 import GameHeader from '../components/GameHeader'
+import AIConsentModal from '../components/AIConsentModal'
 import { PHRASE_CATEGORIES, getRandomPhrasesFromCategory } from '../lib/phrases'
 import { getTodaysChallenge, checkChallengeCompletion, getChallengeProgressMessage } from '../lib/dailyChallenges'
 import { 
@@ -36,6 +40,17 @@ function generateGrid(categoryKey = 'sunrise-regulars') {
 }
 
 export default function Home() {
+  // Authentication
+  const { user, isAuthenticated, isGuest, isLoading } = useAuth()
+  const router = useRouter()
+
+  // Redirect to signin if not authenticated and not guest
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && !isGuest) {
+      router.push('/auth/signin')
+    }
+  }, [isLoading, isAuthenticated, isGuest, router])
+
   // Game state
   const [gameMode, setGameMode] = useState('menu') // 'menu', 'single', 'multiplayer'
   const [mode, setMode] = useState(null) // null, 'create', 'join'
@@ -62,6 +77,9 @@ export default function Home() {
   // Share functionality state
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
   const [shareSuccess, setShareSuccess] = useState(false)
+  
+  // Session restoration state
+  const [sessionRestored, setSessionRestored] = useState(false)
   
   // About dialog state
   const [aboutDialogOpen, setAboutDialogOpen] = useState(false)
@@ -95,32 +113,54 @@ export default function Home() {
   
   // Topic roulette state
   const [topicRouletteOpen, setTopicRouletteOpen] = useState(false)
+
+  // AI Consent modal state (whimsical feature)
+  const [showAIConsent, setShowAIConsent] = useState(false)
+  const aiConsentEnabled = process.env.NEXT_PUBLIC_AI_CONSENT_ENABLED === 'true'
   
   // Simple responsive detection using window width
   const [isMobile, setIsMobile] = useState(false)
   const [isTablet, setIsTablet] = useState(false)
-  
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 600)
       setIsTablet(window.innerWidth < 900)
     }
-    
+
     handleResize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // Show AI consent modal after sign-in (whimsical feature)
+  useEffect(() => {
+    if (!aiConsentEnabled) return
+    if (!isAuthenticated && !isGuest) return
+    if (isLoading) return
+
+    // Check if user has already consented
+    const hasConsented = localStorage.getItem('ai_consent_given')
+    if (!hasConsented) {
+      // Small delay to let the page render first
+      const timer = setTimeout(() => {
+        setShowAIConsent(true)
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [aiConsentEnabled, isAuthenticated, isGuest, isLoading])
+
   // Initialize player profile and daily challenge
   useEffect(() => {
+    if (!user) return
+
+    // Set player name and ID from session (authenticated or guest)
+    setPlayerName(user.name)
+    setPlayerId(user.id)
+
     // Load player profile
     const profile = loadPlayerProfile()
     setPlayerProfile(profile)
-    
-    // Set default player name if available
-    if (profile.preferences.defaultName && profile.preferences.rememberName) {
-      setPlayerName(profile.preferences.defaultName)
-    }
     
     // Initialize daily challenge
     const challenge = getTodaysChallenge()
@@ -129,7 +169,29 @@ export default function Home() {
     // Check if challenge was already completed today
     const completedToday = localStorage.getItem(`challenge_completed_${challenge.date}`)
     setChallengeCompleted(!!completedToday)
-  }, [])
+    
+    // Check for existing game session
+    const savedSession = localStorage.getItem('bingo_game_session')
+    if (savedSession) {
+      try {
+        const savedGameSession = JSON.parse(savedSession)
+        // Verify the session is still valid (created within the last 24 hours)
+        const sessionAge = Date.now() - savedGameSession.timestamp
+        const maxAge = 24 * 60 * 60 * 1000 // 24 hours
+        
+        if (sessionAge < maxAge && savedGameSession.roomCode && savedGameSession.playerId) {
+          // Attempt to restore the game session
+          restoreGameSession(savedGameSession)
+        } else {
+          // Session expired, clear it
+          localStorage.removeItem('bingo_game_session')
+        }
+      } catch (error) {
+        console.error('Error restoring game session:', error)
+        localStorage.removeItem('bingo_game_session')
+      }
+    }
+  }, [user])
 
   // Check for room code in URL on component mount
   useEffect(() => {
@@ -323,6 +385,83 @@ export default function Home() {
     }
   }, [playerProfile, points, bingo, selected, clickCounts, gameStartTime, isMultiplayer, selectedCategory, playerName])
 
+  // Function to restore a game session from localStorage
+  const restoreGameSession = async (session) => {
+    setLoading(true)
+    try {
+      // Fetch the current game state
+      const response = await fetch(`/api/games/${session.roomCode}/state`)
+      
+      if (!response.ok) {
+        // Game not found or expired, clear the session
+        localStorage.removeItem('bingo_game_session')
+        setLoading(false)
+        return
+      }
+      
+      const data = await response.json()
+      const game = data.game
+      
+      // Check if the player is still in the game
+      const player = game.players.find(p => p.id === session.playerId)
+      
+      if (!player) {
+        // Player not found in game, clear the session
+        localStorage.removeItem('bingo_game_session')
+        setLoading(false)
+        return
+      }
+      
+      // Restore the game state
+      setRoomCode(session.roomCode)
+      setPlayerId(session.playerId)
+      setPlayerName(player.name)
+      setGameState(game)
+      setGrid(player.grid || session.grid)
+      setSelected(player.selected)
+      setPoints(player.points || 0)
+      setClickCounts(player.clickCounts || {})
+      setIsMultiplayer(true)
+      setGameMode('multiplayer')
+      
+      if (game.category) {
+        setSelectedCategory(game.category)
+      }
+      
+      // Check if game is already won
+      if (player.hasWon || game.winner) {
+        setBingo(true)
+      }
+      
+      // Show restoration notification
+      setSessionRestored(true)
+      setTimeout(() => setSessionRestored(false), 4000)
+      
+      setLoading(false)
+    } catch (error) {
+      console.error('Failed to restore game session:', error)
+      localStorage.removeItem('bingo_game_session')
+      setLoading(false)
+    }
+  }
+  
+  // Function to save game session to localStorage
+  const saveGameSession = (roomCode, playerId, playerName, grid) => {
+    const session = {
+      roomCode,
+      playerId,
+      playerName,
+      grid,
+      timestamp: Date.now()
+    }
+    localStorage.setItem('bingo_game_session', JSON.stringify(session))
+  }
+  
+  // Function to clear game session from localStorage
+  const clearGameSession = () => {
+    localStorage.removeItem('bingo_game_session')
+  }
+
   const handleClick = async (r, c, isReset = false) => {
     if (r === 2 && c === 2) return // FREE space
     if (bingo) return // Game over
@@ -445,6 +584,9 @@ export default function Home() {
       setGameStartTime(new Date()) // Track game start time for challenges
       setIsMultiplayer(true)
       setGameMode('multiplayer')
+      
+      // Save game session to localStorage
+      saveGameSession(data.roomCode, data.playerId, playerName, newGrid)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -475,11 +617,13 @@ export default function Home() {
       setPlayerId(data.playerId)
       setGameState(data.game)
       
+      let finalGrid = newGrid
       // If the game has a different category, regenerate the grid
       if (data.game.category && data.game.category !== selectedCategory) {
         const categoryGrid = generateGrid(data.game.category)
         setGrid(categoryGrid)
         setSelectedCategory(data.game.category)
+        finalGrid = categoryGrid
       } else {
         setGrid(newGrid)
       }
@@ -491,6 +635,9 @@ export default function Home() {
       setGameStartTime(new Date()) // Track game start time for challenges
       setIsMultiplayer(true)
       setGameMode('multiplayer')
+      
+      // Save game session to localStorage
+      saveGameSession(roomCode.toUpperCase(), data.playerId, playerName, finalGrid)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -924,6 +1071,32 @@ export default function Home() {
     )
   }
 
+  // Show loading state while checking authentication
+  if (status === 'loading') {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      }}>
+        <div style={{
+          fontSize: '24px',
+          color: 'white',
+          fontWeight: 'bold',
+        }}>
+          Loading...
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render the game if not authenticated and not guest (will redirect)
+  if (!user) {
+    return null
+  }
+
   return (
     <div className="game-container">
       {/* Background Elements */}
@@ -937,6 +1110,7 @@ export default function Home() {
       <GameHeader
         playerName={playerName}
         playerProfile={playerProfile}
+        playerAvatar={user?.image}
         points={points}
         bonusPoints={bonusPoints}
         isMultiplayer={isMultiplayer}
@@ -961,6 +1135,7 @@ export default function Home() {
       <FABMenu
         isMobile={isMobile}
         onBackToMenu={() => {
+          clearGameSession()
           setGameMode('menu')
           setGrid([])
           setSelected([])
@@ -978,6 +1153,14 @@ export default function Home() {
         onInstructions={() => setInstructionsOpen(true)}
         onAbout={() => setAboutDialogOpen(true)}
         onStopGame={() => setStopGameDialogOpen(true)}
+        onLogout={() => {
+          if (isGuest) {
+            clearGuestSession()
+            router.push('/auth/signin')
+          } else {
+            signOut({ callbackUrl: '/auth/signin' })
+          }
+        }}
         showShareAndPlayers={isMultiplayer}
         showStopGame={isMultiplayer && gameState?.players?.find(p => p.id === playerId)?.isHost && gameState?.status !== 'finished'}
         showStats={!!playerProfile}
@@ -1099,6 +1282,7 @@ export default function Home() {
               <button 
                 className="new-game-btn sunrise-button"
                 onClick={() => {
+                  clearGameSession()
                   setBingo(false)
                   window.location.reload()
                 }}
@@ -1365,6 +1549,16 @@ export default function Home() {
         </div>
       )}
 
+      {/* Session Restored Notification */}
+      {sessionRestored && (
+        <div className="notification">
+          <div className="notification-content">
+            🎮 Welcome back! Your game has been restored.
+          </div>
+          <button className="notification-close" onClick={() => setSessionRestored(false)}>×</button>
+        </div>
+      )}
+
       {/* Daily Challenge Dialog */}
       {challengeDialogOpen && todaysChallenge && (
         <div className="dialog-overlay" onClick={() => setChallengeDialogOpen(false)}>
@@ -1473,6 +1667,17 @@ export default function Home() {
         onClose={() => setTopicRouletteOpen(false)}
         isMobile={isMobile}
       />
+
+      {/* AI Consent Modal (whimsical feature) */}
+      {aiConsentEnabled && (
+        <AIConsentModal
+          isOpen={showAIConsent}
+          onConsent={() => {
+            localStorage.setItem('ai_consent_given', 'true')
+            setShowAIConsent(false)
+          }}
+        />
+      )}
 
       {/* Challenge Completion Notification */}
       {challengeCompletionNotification && (

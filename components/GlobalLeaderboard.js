@@ -107,9 +107,18 @@ export default function GlobalLeaderboard({ isOpen, onClose, isMobile }) {
                       </div>
                       
                       <div className="player-info">
-                        <div className="player-name">{player.playerName}</div>
-                        <div className="player-level">
-                          {player.achievementsCount} achievement{player.achievementsCount !== 1 ? 's' : ''}
+                        {player.playerImage && (
+                          <img 
+                            src={player.playerImage} 
+                            alt={player.playerName}
+                            className="player-avatar"
+                          />
+                        )}
+                        <div className="player-details">
+                          <div className="player-name">{player.playerName}</div>
+                          <div className="player-level">
+                            {player.achievementsCount} achievement{player.achievementsCount !== 1 ? 's' : ''}
+                          </div>
                         </div>
                       </div>
                       
@@ -288,6 +297,23 @@ export default function GlobalLeaderboard({ isOpen, onClose, isMobile }) {
         
         .player-info {
           min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        .player-avatar {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          border: 2px solid rgba(255, 255, 255, 0.8);
+          object-fit: cover;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .player-details {
+          min-width: 0;
+          flex: 1;
         }
         
         .player-name {
