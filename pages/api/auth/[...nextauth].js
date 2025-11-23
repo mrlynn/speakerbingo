@@ -53,7 +53,7 @@ export const authOptions = {
           const users = db.collection("users")
           const accounts = db.collection("accounts")
 
-          if (credentials.isSignUp) {
+          if (credentials.isSignUp === 'true' || credentials.isSignUp === true) {
             // Handle sign up
             if (!credentials.name || !credentials.password) {
               throw new Error("Name and password are required for sign up")
@@ -78,12 +78,13 @@ export const authOptions = {
             const result = await users.insertOne(newUser)
             const userId = result.insertedId
 
-            // Create account record for credentials
+            // Create account record for credentials (including password hash)
             await accounts.insertOne({
               userId: userId,
               type: "credentials",
               provider: "credentials",
               providerAccountId: credentials.email,
+              passwordHash: hashedPassword,
               access_token: null,
               refresh_token: null,
               expires_at: null,
@@ -149,20 +150,29 @@ export const authOptions = {
     signIn: '/auth/signin',
   },
   
-  // Session strategy
+  // Session strategy - use JWT for credentials compatibility
   session: {
-    strategy: "database",
+    strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
-    updateAge: 24 * 60 * 60, // 24 hours
   },
-  
+
   // Callbacks to customize behavior
   callbacks: {
-    async session({ session, user }) {
-      // Add user ID and image to session
+    async jwt({ token, user, account }) {
+      // Add user info to token on sign in
+      if (user) {
+        token.id = user.id
+        token.name = user.name
+        token.email = user.email
+        token.image = user.image
+      }
+      return token
+    },
+    async session({ session, token }) {
+      // Add user ID and image to session from token
       if (session?.user) {
-        session.user.id = user.id
-        session.user.image = user.image
+        session.user.id = token.id
+        session.user.image = token.image
       }
       return session
     },
