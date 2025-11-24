@@ -1,4 +1,4 @@
-# Sunrise Semester Speaker Bingo
+# Sunrise Speaker Bingo
 
 A fun, interactive bingo game for Sunrise Semester events with social authentication, persistent player profiles, and global leaderboards.
 

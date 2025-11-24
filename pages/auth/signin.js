@@ -89,7 +89,7 @@ export default function SignIn({ providers }) {
       alignItems: 'center',
       justifyContent: 'center',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '20px',
+      padding: '10px',
     }}>
       <div style={{
         background: 'white',
@@ -102,10 +102,10 @@ export default function SignIn({ providers }) {
       }}>
         {/* Logo/Title */}
         <div style={{
-          fontSize: '48px',
-          marginBottom: '10px',
+          fontSize: '180px',
+          marginBottom: '2px',
         }}>
-          🎮
+          🃏
         </div>
         <h1 style={{
           fontSize: '32px',
@@ -113,23 +113,23 @@ export default function SignIn({ providers }) {
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
-          marginBottom: '10px',
+          marginBottom: '2px',
         }}>
-          Sunrise Semester
+          Speaker Bingo
         </h1>
         <h2 style={{
           fontSize: '24px',
           color: '#666',
-          marginBottom: '40px',
+          marginBottom: '2px',
           fontWeight: 'normal',
         }}>
-          Speaker Bingo
+          Listen, Laugh, and Win!
         </h2>
 
         <p style={{
           fontSize: '16px',
           color: '#666',
-          marginBottom: '30px',
+          marginBottom: '2px',
           lineHeight: '1.6',
         }}>
           Choose how you'd like to sign in to start playing and track your stats!
@@ -138,7 +138,7 @@ export default function SignIn({ providers }) {
         {/* Auth Mode Tabs */}
         <div style={{
           display: 'flex',
-          marginBottom: '30px',
+          marginBottom: '4px',
           background: '#f5f5f5',
           borderRadius: '12px',
           padding: '4px',
@@ -276,7 +276,7 @@ export default function SignIn({ providers }) {
               <div>
                 <label style={{
                   display: 'block',
-                  marginBottom: '8px',
+                  marginBottom: '4px',
                   fontWeight: '600',
                   color: '#333',
                 }}>
@@ -289,7 +289,7 @@ export default function SignIn({ providers }) {
                   required={authMode === 'signup'}
                   style={{
                     width: '100%',
-                    padding: '12px 16px',
+                    padding: '12px 12px',
                     border: '2px solid #ddd',
                     borderRadius: '8px',
                     fontSize: '16px',
@@ -305,7 +305,7 @@ export default function SignIn({ providers }) {
             <div>
               <label style={{
                 display: 'block',
-                marginBottom: '8px',
+                marginBottom: '4px',
                 fontWeight: '600',
                 color: '#333',
               }}>
@@ -333,7 +333,7 @@ export default function SignIn({ providers }) {
             <div>
               <label style={{
                 display: 'block',
-                marginBottom: '8px',
+                marginBottom: '4px',
                 fontWeight: '600',
                 color: '#333',
               }}>
@@ -392,7 +392,7 @@ export default function SignIn({ providers }) {
 
         {/* Guest Access */}
         <div style={{
-          marginTop: '20px',
+          marginTop: '8px',
           padding: '20px',
           background: '#f8f9fa',
           borderRadius: '12px',
@@ -401,7 +401,7 @@ export default function SignIn({ providers }) {
           <p style={{
             fontSize: '14px',
             color: '#666',
-            marginBottom: '15px',
+            marginBottom: '8px',
           }}>
             Just want to try it out?
           </p>
@@ -432,7 +432,7 @@ export default function SignIn({ providers }) {
           <p style={{
             fontSize: '12px',
             color: '#999',
-            marginTop: '10px',
+            marginTop: '6px',
           }}>
             Guest sessions won't save your progress
           </p>
@@ -441,7 +441,7 @@ export default function SignIn({ providers }) {
         <p style={{
           fontSize: '14px',
           color: '#999',
-          marginTop: '30px',
+          marginTop: '6px',
           lineHeight: '1.6',
         }}>
           By signing in, you agree to our terms of service and privacy policy.

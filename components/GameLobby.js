@@ -23,11 +23,8 @@ export default function GameLobby({
       {/* Title with sunrise effect */}
       <div className="title-section">
         <h1 className="main-title">
-          Sunrise Semester
+          Speaker Bingo
         </h1>
-        <h2 className="sub-title">
-          BINGO
-        </h2>
         
         {/* Decorative sunrise elements */}
         <div className="pulse-bg" />

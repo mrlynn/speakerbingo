@@ -739,8 +739,8 @@ export default function Home() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Join my Semester Speaker Bingo Game!',
-          text: `Come play Semester Speaker Bingo with me! Room code: ${roomCode}`,
+          title: 'Join my Speaker Bingo Game!',
+          text: `Come play Speaker Bingo with me! Room code: ${roomCode}`,
           url: `${window.location.origin}${window.location.pathname}?room=${roomCode}`
         })
         setShareDialogOpen(false)
@@ -821,11 +821,25 @@ export default function Home() {
           Play Single Player
         </button>
 
+        <button
+          className="logout-btn"
+          onClick={() => {
+            if (isGuest) {
+              clearGuestSession()
+              window.location.href = '/auth/signin'
+            } else {
+              signOut({ callbackUrl: '/auth/signin' })
+            }
+          }}
+        >
+          🚪 {isGuest ? 'Exit Guest Mode' : 'Logout'}
+        </button>
+
         {/* Instructions Dialog for Menu */}
         {instructionsOpen && (
           <div className="dialog-overlay" onClick={() => setInstructionsOpen(false)}>
             <div className="dialog instructions-dialog" onClick={(e) => e.stopPropagation()}>
-              <h2 className="dialog-title">🌅 How to Play Sunrise Semester Speaker Bingo</h2>
+              <h2 className="dialog-title">🌅 How to Play Speaker Bingo</h2>
               
               <div className="dialog-content">
                 <div className="instructions-content">
@@ -888,19 +902,19 @@ export default function Home() {
         {aboutDialogOpen && (
           <div className="dialog-overlay" onClick={() => setAboutDialogOpen(false)}>
             <div className="dialog about-dialog" onClick={(e) => e.stopPropagation()}>
-              <h2 className="dialog-title">About Sunrise Semester Speaker Bingo</h2>
+              <h2 className="dialog-title">About Sunrise Speaker Bingo</h2>
               
               <div className="dialog-content">
                 <div className="about-content">
                   <p className="about-subtitle">A game that reminds us all of Rule 62: never take yourself too seriously.</p>
                   
-                  <p>Sunrise Semester Speaker Bingo is a lighthearted social game created to bring a little extra fun to everyday conversations, meetings, and presentations. Whether you're in a 9 AM check-in, a recovery circle, or just chatting with friends, this game turns common phrases into opportunities for laughter and connection.</p>
+                  <p>Sunrise Speaker Bingo is a lighthearted social game created to bring a little extra fun to everyday conversations, meetings, and presentations. Whether you're in a 9 AM check-in, a recovery circle, or just chatting with friends, this game turns common phrases into opportunities for laughter and connection.</p>
                   
                   <h3>Here's how it works:</h3>
                   <p>Everyone gets a bingo card filled with words and sayings that tend to pop up in conversation—things like "let's circle back," "just for today," or "I feel seen." As you listen, you mark off each one you hear. Get five in a row? Bingo! No prizes here—just the joy of noticing and sharing a good laugh with the people around you.</p>
                   
                   <h3>Why we made this game</h3>
-                  <p>Sunrise Semester Speaker Bingo was born out of the simple desire to keep things fun. In a world where we can all get a little too serious (especially during long meetings or heartfelt shares), we wanted a playful way to stay engaged without losing the spirit of connection. Inspired by Rule 62—never take yourself too seriously—this game is our reminder to lighten up, listen well, and enjoy the moment.</p>
+                  <p>Sunrise Speaker Bingo was born out of the simple desire to keep things fun. In a world where we can all get a little too serious (especially during long meetings or heartfelt shares), we wanted a playful way to stay engaged without losing the spirit of connection. Inspired by Rule 62—never take yourself too seriously—this game is our reminder to lighten up, listen well, and enjoy the moment.</p>
                   
                   <p>So grab a card, tune in, and get ready to shout "Bingo!" when you least expect it. You'll be surprised how much joy you can find in the words we say every day.</p>
                   
@@ -948,7 +962,24 @@ export default function Home() {
           .single-player-btn:hover {
             color: #333;
           }
-          
+
+          .logout-btn {
+            margin-top: 16px;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 25px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          }
+          .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.6);
+          }
+
           .dialog-overlay {
             position: fixed;
             top: 0;
@@ -1103,7 +1134,7 @@ export default function Home() {
       <div className="particles"></div>
         
         <h1 className="title sunrise-title">
-          Semester Speaker Bingo
+          Speaker Bingo
         </h1>
       
       {/* Unified Game Header */}
@@ -1340,19 +1371,19 @@ export default function Home() {
       {aboutDialogOpen && (
         <div className="dialog-overlay" onClick={() => setAboutDialogOpen(false)}>
           <div className="dialog about-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2 className="dialog-title">About Sunrise Semester Speaker Bingo</h2>
+            <h2 className="dialog-title">About Sunrise Speaker Bingo</h2>
             
             <div className="dialog-content">
               <div className="about-content">
                 <p className="about-subtitle">A game that reminds us all of Rule 62: never take yourself too seriously.</p>
                 
-                <p>Sunrise Semester Speaker Bingo is a lighthearted social game created to bring a little extra fun to everyday conversations, meetings, and presentations. Whether you're in a 9 AM check-in, a recovery circle, or just chatting with friends, this game turns common phrases into opportunities for laughter and connection.</p>
+                <p>Sunrise Speaker Bingo is a lighthearted social game created to bring a little extra fun to everyday conversations, meetings, and presentations. Whether you're in a 9 AM check-in, a recovery circle, or just chatting with friends, this game turns common phrases into opportunities for laughter and connection.</p>
                 
                 <h3>Here's how it works:</h3>
                 <p>Everyone gets a bingo card filled with words and sayings that tend to pop up in conversation—things like "let's circle back," "just for today," or "I feel seen." As you listen, you mark off each one you hear. Get five in a row? Bingo! No prizes here—just the joy of noticing and sharing a good laugh with the people around you.</p>
                 
                 <h3>Why we made this game</h3>
-                <p>Sunrise Semester Speaker Bingo was born out of the simple desire to keep things fun. In a world where we can all get a little too serious (especially during long meetings or heartfelt shares), we wanted a playful way to stay engaged without losing the spirit of connection. Inspired by Rule 62—never take yourself too seriously—this game is our reminder to lighten up, listen well, and enjoy the moment.</p>
+                <p>Sunrise Speaker Bingo was born out of the simple desire to keep things fun. In a world where we can all get a little too serious (especially during long meetings or heartfelt shares), we wanted a playful way to stay engaged without losing the spirit of connection. Inspired by Rule 62—never take yourself too seriously—this game is our reminder to lighten up, listen well, and enjoy the moment.</p>
                 
                 <p>So grab a card, tune in, and get ready to shout "Bingo!" when you least expect it. You'll be surprised how much joy you can find in the words we say every day.</p>
                 
@@ -1373,7 +1404,7 @@ export default function Home() {
       {instructionsOpen && (
         <div className="dialog-overlay" onClick={() => setInstructionsOpen(false)}>
           <div className="dialog instructions-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2 className="dialog-title">🌅 How to Play Sunrise Semester Speaker Bingo</h2>
+            <h2 className="dialog-title">🌅 How to Play Sunrise Speaker Bingo</h2>
             
             <div className="dialog-content">
               <div className="instructions-content">

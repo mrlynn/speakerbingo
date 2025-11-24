@@ -1,6 +1,6 @@
 # Authentication Setup Guide
 
-This guide will help you set up the flexible authentication system for Sunrise Semester Speaker Bingo.
+This guide will help you set up the flexible authentication system for Sunrise Speaker Bingo.
 
 ## Overview
 
@@ -17,7 +17,7 @@ The app now supports multiple authentication methods:
 1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
 2. Click "New OAuth App"
 3. Fill in the details:
-   - **Application name**: Sunrise Semester Speaker Bingo
+   - **Application name**: Sunrise Speaker Bingo
    - **Homepage URL**: `http://localhost:3000` (for development)
    - **Authorization callback URL**: `http://localhost:3000/api/auth/callback/github`
 4. Click "Register application"
