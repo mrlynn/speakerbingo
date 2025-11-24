@@ -10,6 +10,7 @@ import FABMenu from '../components/FABMenu'
 import TopicRouletteModal from '../components/TopicRouletteModal'
 import GameHeader from '../components/GameHeader'
 import AIConsentModal from '../components/AIConsentModal'
+import TriviaCard from '../components/TriviaCard'
 import { PHRASE_CATEGORIES, getRandomPhrasesFromCategory } from '../lib/phrases'
 import { getTodaysChallenge, checkChallengeCompletion, getChallengeProgressMessage } from '../lib/dailyChallenges'
 import { 
@@ -784,6 +785,42 @@ export default function Home() {
     }
   }
 
+  // Handle trivia answer submission
+  const handleTriviaAnswer = async (questionId, answerIndex) => {
+    if (!roomCode || !playerId) return
+
+    try {
+      const response = await fetch(`/api/games/${roomCode}/trivia`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerId,
+          playerName,
+          questionId,
+          answerIndex
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Trivia API error:', errorData)
+        return { correct: false, error: errorData.error }
+      }
+
+      const data = await response.json()
+
+      if (data.correct && data.points) {
+        // Add points to local state
+        setPoints(prev => prev + data.points)
+      }
+
+      return data
+    } catch (error) {
+      console.error('Error submitting trivia answer:', error)
+      return { correct: false, error: error.message }
+    }
+  }
+
   // Show lobby if in menu mode
   if (gameMode === 'menu') {
     return (
@@ -1208,7 +1245,19 @@ export default function Home() {
               </div>
             ))}
           </div>
-          
+
+          {/* Trivia Card - only shows in multiplayer mode */}
+          {isMultiplayer && gameState?.trivia?.currentQuestion && (
+            <TriviaCard
+              question={gameState.trivia.currentQuestion}
+              onAnswer={handleTriviaAnswer}
+              answeredBy={gameState.trivia.currentQuestion.answeredBy}
+              isAnswered={gameState.trivia.currentQuestion.isAnswered}
+              playerId={playerId}
+              isMobile={isMobile}
+            />
+          )}
+
           {/* Bingo Grid */}
           <div className="bingo-grid">
             {grid.map((row, r) =>
