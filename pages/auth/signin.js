@@ -1,6 +1,7 @@
 import { getProviders, signIn, useSession } from "next-auth/react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
+import { generateGuestName } from "../../lib/guestNames"
 
 export default function SignIn({ providers }) {
   const { data: session, status } = useSession()
@@ -48,11 +49,14 @@ export default function SignIn({ providers }) {
   }
 
   const handleGuestAccess = () => {
+    // Generate a fun random name for the guest
+    const guestName = generateGuestName()
+
     // Store guest session in localStorage
     const guestSession = {
       user: {
         id: 'guest_' + Date.now(),
-        name: 'Guest Player',
+        name: guestName,
         email: null,
         image: null
       },
