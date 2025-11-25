@@ -13,6 +13,9 @@ export default function TriviaCard({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [wasCorrect, setWasCorrect] = useState(false);
+  const [attemptsUsed, setAttemptsUsed] = useState(0);
+  const [lockedOut, setLockedOut] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Reset state when question changes
   useEffect(() => {
@@ -20,22 +23,54 @@ export default function TriviaCard({
     setIsSubmitting(false);
     setShowResult(false);
     setWasCorrect(false);
+    setAttemptsUsed(0);
+    setLockedOut(false);
+    setErrorMessage('');
   }, [question?.id]);
 
   if (!question) return null;
 
   const handleSubmit = async () => {
-    if (selectedOption === null || isSubmitting || isAnswered) return;
+    if (selectedOption === null || isSubmitting || isAnswered || lockedOut) return;
 
     setIsSubmitting(true);
+    setErrorMessage('');
 
     try {
       // Server verifies correctness - we just send the answer index
       const result = await onAnswer(question.id, selectedOption);
       setWasCorrect(result?.correct || false);
       setShowResult(true);
+
+      // Update attempts tracking
+      if (result?.attemptsUsed !== undefined) {
+        setAttemptsUsed(result.attemptsUsed);
+      }
+
+      // Check if locked out
+      if (result?.lockedOut) {
+        setLockedOut(true);
+      }
+
+      // Show error message if provided
+      if (result?.message) {
+        setErrorMessage(result.message);
+      }
+
+      // Reset selection if wrong and not locked out
+      if (!result?.correct && !result?.lockedOut) {
+        setTimeout(() => {
+          setSelectedOption(null);
+          setShowResult(false);
+        }, 2000);
+      }
     } catch (error) {
       console.error('Error submitting answer:', error);
+      // Check if the error is about max attempts
+      if (error?.message?.includes('Maximum attempts')) {
+        setLockedOut(true);
+        setErrorMessage('You have used all your attempts for this question.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -56,6 +91,14 @@ export default function TriviaCard({
 
       <div className="trivia-question">{question.question}</div>
 
+      {/* Show attempts remaining */}
+      {!isAnswered && attemptsUsed > 0 && !lockedOut && (
+        <div className="attempts-indicator">
+          <span className="attempts-icon">⚠️</span>
+          <span>Attempts used: {attemptsUsed}/2</span>
+        </div>
+      )}
+
       <div className="trivia-options">
         {question.options.map((option, index) => {
           const isSelected = selectedOption === index;
@@ -66,9 +109,9 @@ export default function TriviaCard({
           return (
             <button
               key={index}
-              className={`trivia-option ${isSelected ? 'selected' : ''} ${showCorrect ? 'correct' : ''} ${showWrong ? 'wrong' : ''} ${isAnswered ? 'disabled' : ''}`}
-              onClick={() => !isAnswered && !disabled && setSelectedOption(index)}
-              disabled={isAnswered || disabled}
+              className={`trivia-option ${isSelected ? 'selected' : ''} ${showCorrect ? 'correct' : ''} ${showWrong ? 'wrong' : ''} ${isAnswered || lockedOut ? 'disabled' : ''}`}
+              onClick={() => !isAnswered && !disabled && !lockedOut && setSelectedOption(index)}
+              disabled={isAnswered || disabled || lockedOut}
             >
               <span className="option-letter">{String.fromCharCode(65 + index)}</span>
               <span className="option-text">{option}</span>
@@ -79,7 +122,7 @@ export default function TriviaCard({
         })}
       </div>
 
-      {!isAnswered && (
+      {!isAnswered && !lockedOut && (
         <button
           className="trivia-submit"
           onClick={handleSubmit}
@@ -87,6 +130,14 @@ export default function TriviaCard({
         >
           {isSubmitting ? 'Submitting...' : 'Submit Answer'}
         </button>
+      )}
+
+      {/* Show locked out message */}
+      {lockedOut && !isAnswered && (
+        <div className="trivia-result locked-out">
+          <span className="result-icon">🔒</span>
+          <span>No attempts remaining. Wait for the next question!</span>
+        </div>
       )}
 
       {isAnswered && answeredBy && (
@@ -105,10 +156,10 @@ export default function TriviaCard({
         </div>
       )}
 
-      {showResult && !isAnswered && !wasCorrect && (
+      {showResult && !isAnswered && !wasCorrect && !lockedOut && (
         <div className="trivia-result wrong">
           <span className="result-icon">❌</span>
-          <span>Not quite! Keep trying.</span>
+          <span>{errorMessage || 'Not quite! Keep trying.'}</span>
         </div>
       )}
 
@@ -321,8 +372,31 @@ export default function TriviaCard({
           color: #c62828;
         }
 
+        .trivia-result.locked-out {
+          background: rgba(158, 158, 158, 0.15);
+          color: #616161;
+        }
+
         .result-icon {
           font-size: 20px;
+        }
+
+        .attempts-indicator {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 16px;
+          background: rgba(255, 152, 0, 0.1);
+          border: 2px solid #FF9800;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #E65100;
+          margin-bottom: 12px;
+        }
+
+        .attempts-icon {
+          font-size: 16px;
         }
 
         @keyframes fadeIn {

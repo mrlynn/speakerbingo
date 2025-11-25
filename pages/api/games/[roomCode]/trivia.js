@@ -40,10 +40,25 @@ export default async function handler(req, res) {
         });
       }
 
+      // Check player's attempt count (max 2 attempts)
+      const playerAttempts = game.trivia.currentQuestion.attempts || {};
+      const currentAttempts = playerAttempts[playerId] || 0;
+
+      if (currentAttempts >= 2) {
+        return res.status(400).json({
+          error: 'Maximum attempts reached',
+          attemptsUsed: currentAttempts,
+          maxAttempts: 2
+        });
+      }
+
       // Server-side verification of correctness
       const correctIndex = game.trivia.currentQuestion.correctIndex;
       // Ensure both are numbers for comparison (answerIndex may come as string from JSON)
       const isAnswerCorrect = parseInt(answerIndex, 10) === parseInt(correctIndex, 10);
+
+      // Increment attempt count
+      const newAttemptCount = currentAttempts + 1;
 
       // If correct answer, mark as answered and award points
       if (isAnswerCorrect) {
@@ -60,7 +75,8 @@ export default async function handler(req, res) {
               playerName: playerName,
               answeredAt: new Date()
             },
-            'trivia.currentQuestion.isAnswered': true
+            'trivia.currentQuestion.isAnswered': true,
+            [`trivia.currentQuestion.attempts.${playerId}`]: newAttemptCount
           },
           $push: {
             'trivia.questionHistory': {
@@ -91,14 +107,31 @@ export default async function handler(req, res) {
           success: true,
           correct: true,
           points,
+          attemptsUsed: newAttemptCount,
           message: `Correct! +${points} points`
         });
       } else {
-        // Wrong answer - just return feedback, don't lock them out
+        // Wrong answer - increment attempt counter
+        await games.updateOne(
+          { roomCode: roomCode.toUpperCase() },
+          {
+            $set: {
+              [`trivia.currentQuestion.attempts.${playerId}`]: newAttemptCount
+            }
+          }
+        );
+
+        const remainingAttempts = 2 - newAttemptCount;
+
         return res.status(200).json({
           success: true,
           correct: false,
-          message: 'Incorrect, try again!'
+          attemptsUsed: newAttemptCount,
+          remainingAttempts: remainingAttempts,
+          lockedOut: remainingAttempts === 0,
+          message: remainingAttempts > 0
+            ? `Incorrect! You have ${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} left.`
+            : 'Incorrect! No attempts remaining.'
         });
       }
     } catch (error) {
@@ -131,7 +164,8 @@ export default async function handler(req, res) {
                   ...newQuestion,
                   appearedAt: now,
                   isAnswered: false,
-                  answeredBy: null
+                  answeredBy: null,
+                  attempts: {}
                 },
                 nextQuestionAt: new Date(now.getTime() + intervalMs),
                 questionHistory: [],
@@ -175,7 +209,8 @@ export default async function handler(req, res) {
                 ...newQuestion,
                 appearedAt: now,
                 isAnswered: false,
-                answeredBy: null
+                answeredBy: null,
+                attempts: {}
               },
               'trivia.nextQuestionAt': new Date(now.getTime() + intervalMs)
             }
