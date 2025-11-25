@@ -123,6 +123,7 @@ export default function TriviaCard({
             0 0 0 2px var(--sunrise-gold, #FFD180);
           max-width: 100%;
           width: 100%;
+          min-width: 0;
           box-sizing: border-box;
           overflow: hidden;
           animation: slideIn 0.3s ease-out;
@@ -180,13 +181,20 @@ export default function TriviaCard({
         }
 
         .trivia-question {
-          font-size: ${isMobile ? '16px' : '18px'};
+          font-size: ${isMobile ? '14px' : '16px'};
           font-weight: 600;
           color: var(--sunrise-navy, #2C3E50);
           margin-bottom: 16px;
-          line-height: 1.4;
+          line-height: 1.5;
           word-wrap: break-word;
-          overflow-wrap: break-word;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+          white-space: pre-wrap;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          display: block;
+          hyphens: auto;
         }
 
         .trivia-options {

@@ -1982,7 +1982,7 @@ export default function Home() {
           padding: ${isMobile ? '8px' : isTablet ? '20px' : '28px'};
           position: relative;
           /* Ensure card doesn't overflow on mobile */
-          max-width: ${isMobile ? '100%' : 'none'};
+          max-width: ${isMobile ? '100%' : (isTablet ? '600px' : '750px')};
           width: ${isMobile ? '100%' : 'auto'};
           margin: ${isMobile ? '0' : '0'};
           /* Better mobile rendering */
@@ -1991,10 +1991,10 @@ export default function Home() {
         
         .bingo-header {
           display: grid;
-          grid-template-columns: ${isMobile ? 'repeat(5, 1fr)' : `repeat(5, ${cellSize}px)`};
+          grid-template-columns: ${isMobile ? 'repeat(5, 1fr)' : 'repeat(5, 1fr)'};
           gap: ${isMobile ? '2px' : '4px'};
           margin-bottom: 0;
-          width: ${isMobile ? '100%' : 'fit-content'};
+          width: 100%;
           border: 3px solid #FF6B35;
           border-radius: 12px 12px 0 0;
           background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
@@ -2003,8 +2003,8 @@ export default function Home() {
         }
         
         .header-cell {
-          height: ${isMobile ? 'auto' : isTablet ? '60px' : '75px'};
-          aspect-ratio: ${isMobile ? '1' : 'auto'};
+          aspect-ratio: ${isMobile ? '1' : '1.5'};
+          width: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -2014,12 +2014,12 @@ export default function Home() {
           text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
           background: rgba(255, 255, 255, 0.1);
           border-radius: 8px;
-          min-height: ${isMobile ? '36px' : 'auto'};
+          min-height: ${isMobile ? '36px' : '60px'};
         }
         
         .bingo-grid {
           display: grid;
-          grid-template-columns: ${isMobile ? 'repeat(5, 1fr)' : `repeat(5, ${cellSize}px)`};
+          grid-template-columns: repeat(5, 1fr);
           gap: ${isMobile ? '2px' : '4px'};
           border: 3px solid #FF6B35;
           border-top: none;
@@ -2029,25 +2029,23 @@ export default function Home() {
           /* Ensure no horizontal overflow on mobile */
           max-width: 100%;
           box-sizing: border-box;
-          width: ${isMobile ? '100%' : 'fit-content'};
+          width: 100%;
         }
         
         .grid-cell {
-          height: ${isMobile ? 'auto' : cellSize + 'px'};
-          aspect-ratio: ${isMobile ? '1' : 'auto'};
+          aspect-ratio: 1;
+          width: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           -webkit-tap-highlight-color: transparent;
           /* Improved touch targets for mobile */
-          min-height: ${isMobile ? '50px' : cellSize + 'px'};
+          min-height: ${isMobile ? '50px' : '80px'};
           touch-action: manipulation;
           position: relative;
           /* Better mobile interaction feedback */
           transition: all 0.15s ease;
-          /* Ensure cells are square on mobile */
-          ${isMobile ? 'width: 100%;' : ''}
         }
         
         .grid-cell:active {
