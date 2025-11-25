@@ -1,5 +1,6 @@
 import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
+import EmailProvider from "next-auth/providers/email"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter"
 import clientPromise from "../../../lib/mongoClient"
@@ -11,6 +12,66 @@ export const authOptions = {
   
   // Configure authentication providers
   providers: [
+    EmailProvider({
+      server: {
+        host: 'smtp.gmail.com',
+        port: 587,
+        auth: {
+          user: process.env.GOOGLE_EMAIL,
+          pass: process.env.GOOGLE_APP_PASSWORD,
+        },
+      },
+      from: process.env.GOOGLE_EMAIL,
+      maxAge: 10 * 60, // Magic links expire after 10 minutes
+      // Custom email template
+      sendVerificationRequest: async ({ identifier: email, url, provider }) => {
+        const { host } = new URL(url)
+        const nodemailer = require('nodemailer')
+
+        const transport = nodemailer.createTransport(provider.server)
+
+        await transport.sendMail({
+          to: email,
+          from: provider.from,
+          subject: `Sign in to Speaker Bingo`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <div style="font-size: 64px;">🃏</div>
+                <h1 style="color: #667eea; margin: 10px 0;">Speaker Bingo</h1>
+              </div>
+
+              <div style="background: #f8f9fa; padding: 30px; border-radius: 12px; margin-bottom: 20px;">
+                <h2 style="color: #333; margin-top: 0;">Sign in to your account</h2>
+                <p style="color: #666; line-height: 1.6;">
+                  Click the button below to sign in to Speaker Bingo. This link will expire in 10 minutes.
+                </p>
+
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${url}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                    Sign In
+                  </a>
+                </div>
+
+                <p style="color: #999; font-size: 14px; margin-bottom: 0;">
+                  Or copy and paste this link into your browser:
+                </p>
+                <p style="word-break: break-all; color: #667eea; font-size: 14px;">
+                  ${url}
+                </p>
+              </div>
+
+              <p style="color: #999; font-size: 12px; text-align: center;">
+                If you didn't request this email, you can safely ignore it.
+              </p>
+            </div>
+          `,
+          text: `Sign in to Speaker Bingo\n\nClick this link to sign in: ${url}\n\nThis link will expire in 10 minutes.\n\nIf you didn't request this email, you can safely ignore it.`,
+        })
+
+        console.log('✅ [Magic Link] Email sent to:', email)
+      },
+    }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,

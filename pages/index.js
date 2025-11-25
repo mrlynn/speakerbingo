@@ -12,6 +12,39 @@ import GameHeader from '../components/GameHeader'
 import AIConsentModal from '../components/AIConsentModal'
 import TriviaCard from '../components/TriviaCard'
 import { PHRASE_CATEGORIES, getRandomPhrasesFromCategory } from '../lib/phrases'
+
+// Helper to generate grid from phrases array
+function generateGridFromPhrases(phrases) {
+  const matrix = []
+  let phraseIndex = 0
+  for (let r = 0; r < 5; r++) {
+    matrix.push([])
+    for (let c = 0; c < 5; c++) {
+      if (r === 2 && c === 2) {
+        matrix[r][c] = 'FREE'
+      } else {
+        matrix[r][c] = phrases[phraseIndex] || 'PHRASE'
+        phraseIndex++
+      }
+    }
+  }
+  return matrix
+}
+
+// Async function to fetch phrases from API (with fallback to local)
+async function fetchPhrasesFromAPI(categoryKey = 'sunrise-regulars') {
+  try {
+    const res = await fetch(`/api/phrases?category=${categoryKey}&count=24`)
+    if (res.ok) {
+      const data = await res.json()
+      return data.phrases
+    }
+  } catch (error) {
+    console.error('Error fetching phrases from API:', error)
+  }
+  // Fallback to local
+  return getRandomPhrasesFromCategory(categoryKey, 24)
+}
 import { getTodaysChallenge, checkChallengeCompletion, getChallengeProgressMessage } from '../lib/dailyChallenges'
 import { 
   loadPlayerProfile, 
@@ -22,23 +55,7 @@ import {
   ACHIEVEMENTS 
 } from '../lib/playerProfile'
 
-function generateGrid(categoryKey = 'sunrise-regulars') {
-  const chosen = getRandomPhrasesFromCategory(categoryKey, 24)
-  const matrix = []
-  let phraseIndex = 0
-  for (let r = 0; r < 5; r++) {
-    matrix.push([])
-    for (let c = 0; c < 5; c++) {
-      if (r === 2 && c === 2) {
-        matrix[r][c] = 'FREE'
-      } else {
-        matrix[r][c] = chosen[phraseIndex]
-        phraseIndex++
-      }
-    }
-  }
-  return matrix
-}
+// Old generateGrid function removed - now using generateGridFromPhrases with async API fetch
 
 export default function Home() {
   // Authentication
@@ -207,12 +224,17 @@ export default function Home() {
   // Initialize grid for single player
   useEffect(() => {
     if (gameMode === 'single' && grid.length === 0) {
-      const newGrid = generateGrid(selectedCategory)
-      setGrid(newGrid)
-      setSelected(Array(5).fill().map(() => Array(5).fill(false)))
-      setPoints(0)
-      setClickCounts({})
-      setGameStartTime(new Date()) // Track game start time for challenges
+      // Try to fetch from API, fallback to local
+      const initGrid = async () => {
+        const phrases = await fetchPhrasesFromAPI(selectedCategory)
+        const newGrid = generateGridFromPhrases(phrases)
+        setGrid(newGrid)
+        setSelected(Array(5).fill().map(() => Array(5).fill(false)))
+        setPoints(0)
+        setClickCounts({})
+        setGameStartTime(new Date())
+      }
+      initGrid()
     }
   }, [gameMode, grid, selectedCategory])
 
@@ -554,9 +576,10 @@ export default function Home() {
   const handleCreateGame = async () => {
     setLoading(true)
     setError(null)
-    
+
     try {
-      const newGrid = generateGrid(selectedCategory)
+      const phrases = await fetchPhrasesFromAPI(selectedCategory)
+      const newGrid = generateGridFromPhrases(phrases)
       const response = await fetch('/api/games/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -598,10 +621,11 @@ export default function Home() {
   const handleJoinGame = async () => {
     setLoading(true)
     setError(null)
-    
+
     try {
       // For joining games, we'll get the category from the existing game
-      const newGrid = generateGrid(selectedCategory)
+      const phrases = await fetchPhrasesFromAPI(selectedCategory)
+      const newGrid = generateGridFromPhrases(phrases)
       const response = await fetch('/api/games/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -611,17 +635,18 @@ export default function Home() {
           phrases: newGrid
         })
       })
-      
+
       const data = await response.json()
       if (!response.ok) throw new Error(data.error)
-      
+
       setPlayerId(data.playerId)
       setGameState(data.game)
-      
+
       let finalGrid = newGrid
       // If the game has a different category, regenerate the grid
       if (data.game.category && data.game.category !== selectedCategory) {
-        const categoryGrid = generateGrid(data.game.category)
+        const categoryPhrases = await fetchPhrasesFromAPI(data.game.category)
+        const categoryGrid = generateGridFromPhrases(categoryPhrases)
         setGrid(categoryGrid)
         setSelectedCategory(data.game.category)
         finalGrid = categoryGrid
