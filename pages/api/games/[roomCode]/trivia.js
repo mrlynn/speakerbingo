@@ -54,8 +54,18 @@ export default async function handler(req, res) {
 
       // Server-side verification of correctness
       const correctIndex = game.trivia.currentQuestion.correctIndex;
+
+      // Debug logging
+      console.log('🔍 [Trivia Answer Check]');
+      console.log('  Question ID:', questionId);
+      console.log('  Player answer index:', answerIndex, 'Type:', typeof answerIndex);
+      console.log('  Correct index:', correctIndex, 'Type:', typeof correctIndex);
+      console.log('  Answer submitted:', game.trivia.currentQuestion.options?.[answerIndex]);
+      console.log('  Correct answer:', game.trivia.currentQuestion.options?.[correctIndex]);
+
       // Ensure both are numbers for comparison (answerIndex may come as string from JSON)
       const isAnswerCorrect = parseInt(answerIndex, 10) === parseInt(correctIndex, 10);
+      console.log('  Is correct?', isAnswerCorrect);
 
       // Increment attempt count
       const newAttemptCount = currentAttempts + 1;
