@@ -16,6 +16,14 @@ export default function TriviaCard({
   const [attemptsUsed, setAttemptsUsed] = useState(0);
   const [lockedOut, setLockedOut] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    // Load collapsed state from localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('triviaCardCollapsed');
+      return saved === 'true';
+    }
+    return false;
+  });
 
   // Reset state when question changes
   useEffect(() => {
@@ -27,6 +35,13 @@ export default function TriviaCard({
     setLockedOut(false);
     setErrorMessage('');
   }, [question?.id]);
+
+  // Save collapsed state to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('triviaCardCollapsed', isCollapsed.toString());
+    }
+  }, [isCollapsed]);
 
   if (!question) return null;
 
@@ -80,16 +95,28 @@ export default function TriviaCard({
   const someoneElseAnswered = isAnswered && !iWasFirst;
 
   return (
-    <div className="trivia-card">
-      <div className="trivia-header">
+    <div className={`trivia-card ${isCollapsed ? 'collapsed' : ''}`}>
+      <div className="trivia-header" onClick={() => setIsCollapsed(!isCollapsed)}>
         <span className="trivia-icon">🎯</span>
         <span className="trivia-title">AA Trivia</span>
         <span className="trivia-points">+{question.points} pts</span>
+        <button
+          className="collapse-button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsCollapsed(!isCollapsed);
+          }}
+          aria-label={isCollapsed ? 'Expand trivia' : 'Collapse trivia'}
+        >
+          {isCollapsed ? '▼' : '▲'}
+        </button>
       </div>
 
-      <div className="trivia-category">{question.category}</div>
+      {!isCollapsed && (
+        <>
+          <div className="trivia-category">{question.category}</div>
 
-      <div className="trivia-question">{question.question}</div>
+          <div className="trivia-question">{question.question}</div>
 
       {/* Show attempts remaining */}
       {!isAnswered && attemptsUsed > 0 && !lockedOut && (
@@ -162,6 +189,8 @@ export default function TriviaCard({
           <span>{errorMessage || 'Not quite! Keep trying.'}</span>
         </div>
       )}
+        </>
+      )}
 
       <style jsx>{`
         .trivia-card {
@@ -178,6 +207,11 @@ export default function TriviaCard({
           box-sizing: border-box;
           overflow: hidden;
           animation: slideIn 0.3s ease-out;
+          transition: all 0.3s ease;
+        }
+
+        .trivia-card.collapsed {
+          padding: ${isMobile ? '12px 16px' : '16px 20px'};
         }
 
         @keyframes slideIn {
@@ -198,6 +232,23 @@ export default function TriviaCard({
           margin-bottom: 12px;
           padding-bottom: 12px;
           border-bottom: 2px solid var(--sunrise-gold, #FFD180);
+          cursor: pointer;
+          transition: background 0.2s ease;
+        }
+
+        .trivia-header:hover {
+          background: rgba(255, 209, 128, 0.1);
+          margin: -8px;
+          padding: 8px;
+          padding-bottom: 20px;
+          margin-bottom: 4px;
+          border-radius: 8px;
+        }
+
+        .collapsed .trivia-header {
+          margin-bottom: 0;
+          padding-bottom: 0;
+          border-bottom: none;
         }
 
         .trivia-icon {
@@ -397,6 +448,30 @@ export default function TriviaCard({
 
         .attempts-icon {
           font-size: 16px;
+        }
+
+        .collapse-button {
+          margin-left: auto;
+          background: transparent;
+          border: none;
+          color: var(--sunrise-rust, #8B4513);
+          font-size: 16px;
+          cursor: pointer;
+          padding: 4px 8px;
+          border-radius: 4px;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .collapse-button:hover {
+          background: rgba(139, 69, 19, 0.1);
+          transform: scale(1.1);
+        }
+
+        .collapse-button:active {
+          transform: scale(0.95);
         }
 
         @keyframes fadeIn {
