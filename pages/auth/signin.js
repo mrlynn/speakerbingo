@@ -63,12 +63,26 @@ export default function SignIn({ providers }) {
       })
 
       if (result?.error) {
-        setError(result.error)
+        // Provide better error messages for common issues
+        let errorMessage = result.error
+        
+        // Check for rate limiting errors (NextAuth may return various error messages)
+        if (result.error.includes('rate') || result.error.includes('limit') || 
+            result.error.includes('too many') || result.error.includes('wait')) {
+          errorMessage = 'Too many requests. Please wait a few minutes before requesting another magic link, or try signing in with Google or using your password instead.'
+        } else if (result.error.includes('Email') || result.error.includes('email')) {
+          errorMessage = result.error
+        } else {
+          errorMessage = 'Failed to send magic link. Please try again, or use another sign-in method.'
+        }
+        
+        setError(errorMessage)
       } else {
         setMagicLinkSent(true)
       }
     } catch (err) {
-      setError('Failed to send magic link. Please try again.')
+      console.error('Magic link error:', err)
+      setError('Failed to send magic link. Please try again, or use Google sign-in or password instead.')
     } finally {
       setIsLoading(false)
     }
@@ -317,6 +331,9 @@ export default function SignIn({ providers }) {
                 <strong style={{ color: '#333' }}>✨ Passwordless Sign-In</strong>
                 <p style={{ marginTop: '8px', marginBottom: 0 }}>
                   Enter your email and we'll send you a magic link to sign in instantly—no password needed!
+                </p>
+                <p style={{ marginTop: '8px', marginBottom: 0, fontSize: '12px', color: '#999' }}>
+                  Having trouble? Try signing in with Google or use your password instead.
                 </p>
               </div>
 

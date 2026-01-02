@@ -23,10 +23,36 @@ export const authOptions = {
       },
       from: process.env.GOOGLE_EMAIL,
       maxAge: 10 * 60, // Magic links expire after 10 minutes
+      // Reduce rate limiting - allow more frequent requests
+      // NextAuth has built-in rate limiting (default ~24 hours), but we can work around it
+      // by cleaning up old tokens before sending new ones
       // Custom email template
       sendVerificationRequest: async ({ identifier: email, url, provider }) => {
         const { host } = new URL(url)
         const nodemailer = require('nodemailer')
+
+        // Clean up expired verification tokens for this email to prevent rate limiting issues
+        try {
+          const client = await clientPromise
+          const db = client.db()
+          const verificationTokens = db.collection('verification_tokens')
+          
+          // Delete expired tokens for this email
+          await verificationTokens.deleteMany({
+            identifier: email,
+            expires: { $lt: new Date() }
+          })
+          
+          // Also delete any tokens older than 1 hour to prevent accumulation
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+          await verificationTokens.deleteMany({
+            identifier: email,
+            expires: { $lt: oneHourAgo }
+          })
+        } catch (error) {
+          console.error('Error cleaning up verification tokens:', error)
+          // Continue anyway - this is just cleanup
+        }
 
         const transport = nodemailer.createTransport(provider.server)
 

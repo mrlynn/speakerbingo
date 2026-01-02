@@ -485,6 +485,23 @@ export default function Home() {
     localStorage.removeItem('bingo_game_session')
   }
 
+  // Function to end current game and return to lobby
+  const endCurrentGame = () => {
+    clearGameSession()
+    setGameMode(null)
+    setIsMultiplayer(false)
+    setRoomCode('')
+    setPlayerId('')
+    setGameState(null)
+    setGrid([])
+    setSelected([])
+    setPoints(0)
+    setClickCounts({})
+    setBingo(false)
+    setSessionRestored(false)
+    setMode(null)
+  }
+
   const handleClick = async (r, c, isReset = false) => {
     if (r === 2 && c === 2) return // FREE space
     if (bingo) return // Game over
@@ -1656,11 +1673,16 @@ export default function Home() {
 
       {/* Session Restored Notification */}
       {sessionRestored && (
-        <div className="notification">
+        <div className="notification session-notification">
           <div className="notification-content">
             🎮 Welcome back! Your game has been restored.
           </div>
-          <button className="notification-close" onClick={() => setSessionRestored(false)}>×</button>
+          <div className="notification-actions">
+            <button className="notification-btn end-game-btn" onClick={endCurrentGame}>
+              End Game
+            </button>
+            <button className="notification-close" onClick={() => setSessionRestored(false)}>×</button>
+          </div>
         </div>
       )}
 
