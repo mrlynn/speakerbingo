@@ -1,9 +1,20 @@
 import Head from 'next/head'
 import { SessionProvider } from 'next-auth/react'
 import { ThemeProvider } from '../lib/ThemeContext'
+import MaintenanceOverlay from '../components/MaintenanceOverlay'
 import '../styles/globals.css'
 
+const MAINTENANCE_MODE = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true'
+
 function MyApp({ Component, pageProps: { session, ...pageProps } }) {
+  if (MAINTENANCE_MODE) {
+    return (
+      <ThemeProvider>
+        <MaintenanceOverlay />
+      </ThemeProvider>
+    )
+  }
+
   return (
     <SessionProvider session={session}>
       <ThemeProvider>
